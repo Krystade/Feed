@@ -2,23 +2,29 @@
 ** TO FIX
 ** 
 ** Different shapes attract to each other
-** Handling/steering, go straight at target -- not have a fixed speed to increase/decrease
+** Handling/steering, go straight at target -- not have a fixed speed to increase/decrease (?? I think this is fine, not sure what i wanted to fix)
 ** 
 */
 
 /*
 ** TO DO
-** "collision" for multiple shapes
-** 
+** "collision" for multiple mobs
+** Zooming in on mouse cursor not 0,0
 ** fighting?
 ** Collision between mobs
 */
 
-
+// Variable used to retain how much scaling should occur
+// zoom has to be log(1) so the scale is 1
+var zoom = Math.log(1);
+// Variable used to retain how much translation should occur
+var trans = [0,0];
 var entities = [];
 var foods = [];
 var pressed = 0;
-var growthTimer = 0;
+var growthTimer = 0;	
+// How quickly food spawns
+var foodRate = .5;
 
 
 function setup() {
@@ -27,37 +33,55 @@ function setup() {
 	createCanvas(windowWidth, windowHeight);
 	frameRate(30);
 	
-	for(var i = 0; i < 1; i++){
-		//entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, 20, 10, foods, "circle"))
-		//entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, 20, 10, foods, "square"))
-		//entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, 20, 10, foods, "triangle"))
-		
-		entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "circle"))
-		entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "square"))
-		entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "triangle"))
-	}	
+	for(var i = 0; i < 10; i++){		
+		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "circle"));
+		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "square"));
+		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "triangle"));
+		entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, 60, 10, foods, "circle"));
+	}
+	entities.push(new Mob(104, 40, 186, 0, 0, 60, 10, foods, "circle"));
 	for(var i = 0; i < 50; i++){
 		foods.push(new Food(ceil(random(30,width - 30)),ceil(random(30,height - 30))));
 	}
 	ungroup();
 }
-//var section = {width:width / sqrt(entities.length), height:height / sqrt(entities.length)}
+
+
 function draw() {
-	if (frameCount % (1/foodRate) == 0){
-		print(frameCount);
-	}
-	background (200);
-	var foodRate = .5;
+	push()
+	// Controls adjusting growth rate
 	if (entities.length > 0){
 		growth = entities[0].growth;
 	}else{
-		growth = .2
+		growth = 2;
 	}
+	// Set the background color
+	background (200);
+	// Scale and translate all entities to simulate zooming and moving
+	scale(Math.pow(10, zoom));
+	translate(trans[0], trans[1]);
+
+	// Move all entities right simulating the view moving left
+	if (keyIsDown(LEFT_ARROW)){
+		trans[0] = trans[0] + 25;
+    }	
+	// Move view up
+	if (keyIsDown(UP_ARROW)){
+		trans[1] = trans[1] + 25;
+    }
+	// Move view right
+	if (keyIsDown(RIGHT_ARROW)){
+		trans[0] = trans[0] - 25;
+    }
+	// Move view down
+	if (keyIsDown(DOWN_ARROW)){
+		trans[1] = trans[1] - 25;
+    }
 	
 	//Detect if the mouse is being held down to make a mob every 3 frames
 	if (mouseIsPressed){
 		pressed++;
-		if(pressed % 3 == 0 && pressed > 10){
+		if(pressed % 2 == 0 && pressed > 10){
 			entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX, mouseY, 20, 10, foods, "circle"));
 		}
 	}else{
@@ -98,7 +122,7 @@ function draw() {
 					entities[j].canBreed = false;
 					entities[i].foundMate = false;
 					entities[j].foundMate = false;
-					entities.push(new Mob( ceil(random(entities[i].r, entities[j].r)), ceil(random(entities[i].g, entities[j].g)), ceil(random(entities[i].b, entities[j].b)), (entities[i].x + entities[j].x)/2, (entities[i].y + entities[j].y)/2, 20, 10, foods, entities[i].shape));
+					entities.push(new Mob((entities[i].r + entities[j].r)/2, (entities[i].g + entities[j].g)/2, (entities[i].b + entities[j].b)/2, (entities[i].x + entities[j].x)/2, (entities[i].y + entities[j].y)/2, 50, 10, foods, entities[i].shape));
 					entities[entities.length -1].search(entities, foods);
 					entities[i].lifeSpan -= 5;
 					entities[j].lifeSpan -= 5;
@@ -130,26 +154,31 @@ function draw() {
 		}
 		
 	}
-	//Time: and Population
+	// push() at start of draw so the text stays in view
+	pop();
+	//Time and Population
 	fill(0);
 	strokeWeight(0);
-	textSize(30);
+	textSize(40);
 	textAlign(LEFT);
-	text("Time: " + ceil(frameCount / 30), 50, 100);
-	text("Population: " + entities.length, 50, 150 );
+	time = frameCount / 30;
+	minutes = Math.floor(time / 60);
+	time = floor(time - minutes * 60);
+	text("Time:  " + minutes + ":" + time, 50, 50);
+	text("Population: " + entities.length, 50, 90 );
 	//Instructions
-	textSize(15);
+	textSize(40);
 	textAlign(CENTER);
-	text("Click to create 1 mob, hold to create many", width / 2, 50);
+	text("Click to create 1 mob, hold to create many", width / 2, 40);
 	text("Press U to ungroup", width / 2, 80);
-	text ("Press C to clear mobs", width / 2, 110);
-	text ("Press + to increase and - to decrease \nthe growth rate of the mobs", width / 2, 140);
+	text ("Press C to clear mobs", width / 2, 120);
+	text ("Press + / - to increase / decrease growth rate", width / 2, 160);
 	//Growth Rate
 	fill(35, 224, 67);
 	strokeWeight(1.5);
 	textSize(30);
 	textAlign(RIGHT);
-	//Only have the Growth Rate displayer for a few seconds
+	//Only have the Growth Rate displayed for a few seconds
 	if (growthTimer > 0){
 		growthTimer--;
 		text ("Growth Rate: " + growth, width - 60, 100);
@@ -179,7 +208,7 @@ function ungroup(){
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function mousePressed() {
-	entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX, mouseY, 20, 10, foods, "circle"));
+	entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX, mouseY, 50, 10, foods, "circle"));
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -209,4 +238,15 @@ function keyPressed() {
 		}
 		growthTimer = 3 * 30;
 	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function mouseWheel(event) {
+	if(event.delta < 0){
+		zoom = zoom + .05;
+	}else{
+		zoom = zoom - .05;
+	}
+	//print(Math.pow(1.5, zoom), zoom)
 }
