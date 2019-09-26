@@ -3,6 +3,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.x = x;
 	this.y = y;
 	this.size= size;
+	this.maxSize = 150;
 	this.xSpeed = .0001;//random(-4,3);
 	this.ySpeed = .0001;//random(-4,3);
 	this.baseSpeed = random(0,2);
@@ -12,13 +13,13 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.frames = ceil(random(0,10));
 	this.lifeSpan = lifeSpan;
 	//How quickly they grow
-	this.growth = .2;
+	this.growth = 2;
 		
 	//Breeding
 	this.foundMate = false;
 	this.canBreed = false;
 	//cooldown is 30 seconds
-	this.breedCoolDown = 30 * 30;
+	this.breedCoolDown = 30 * 30; //30 seconds because of 30 fps
 	
 	//Color
 	this.r = r;
@@ -65,8 +66,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		}else {
 			text(ceil(this.lifeSpan), this.x, this.y - this.size * .6);
 		}	
-		//Every 15 frames after they are born they grow
-		if(this.frames == 0){
+		//Every 15 frames after they are born they grow unless they are at the max size
+		if(this.frames == 0 && this.size < this.maxSize){
 			this.size += this.growth;
 		}
 		//Opacity directly correlates to lifeSpan
@@ -106,6 +107,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		}else{
 			this.ySpeed += -3 * ((1/(this.y - this.closest.y + .001)) * abs(this.y - this.closest.y));
 		}
+		/*
 		//Make sure they don't leave the window
 		if(this.x > width - 25){
 			this.xSpeed = -abs(this.xSpeed);
@@ -119,13 +121,14 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		else if(this.y > height - 25){
 			this.ySpeed = -abs(this.ySpeed);
 		}
+		*/
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.breed = function(other){
 		if (this.shape == other.shape && dist(this.x, this.y, other.x, other.y) < (this.size/2 + other.size/2)){
-			if (abs((this.r + this.g + this.b) - (other.r + other.g + other.b)) < 100 && this.canBreed && other.canBreed){
+			if (abs(this.r - other.r) <= 40 && abs(this.g - other.g) <= 40 && abs(this.b - other.b) <= 40 && this.canBreed && other.canBreed){
 			 //Prevent crashing the window through infinite breeding
 			 this.canBreed = false;
 			 //Only allow breeding every x frames
@@ -150,7 +153,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.separate = function(){
-		if((this.size > 100 && this.lifeSpan > 20) || this.size > 50 && this.lifeSpan > 120){
+		if((this.size > 100 && this.lifeSpan > 20) || this.size > this.maxSize * .9 && this.lifeSpan > 120){
 			entities.push(new Mob(this.r, this.g, this.b, this.x, this.y, this.size * .5, this.lifeSpan * .5, foods, this.shape));
 			this.size *= .5;
 			this.lifeSpan *= .5;
@@ -170,7 +173,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		}
 		//Check if there is a mate
 		for (var i = 0; i < entities.length; i++){
-			if (entities.indexOf(this) != i && this.canBreed && entities[i].canBreed && abs((this.r + this.g + this.b) - (entities[i].r + entities[i].g + entities[i].b)) < 100){
+			if (entities.indexOf(this) != i && this.canBreed && this.shape == entities[i].shape && entities[i].canBreed && abs(entities[i].r - this.r) <= 40 && abs(entities[i].g - this.g) <= 40 && abs(entities[i].b - this.b) <= 40){
 				this.foundMate = true;
 			}
 		}
@@ -188,61 +191,11 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		if (this.lifeSpan > 30 && this.foundMate){
 			//Look for breed partner if they have enough health and can breed
 			for (var i = 0; i < entities.length; i++){
-			if(entities.indexOf(this) != i && abs((this.r + this.g + this.b) - (entities[i].r + entities[i].g + entities[i].b)) < 100 && entities[i].canBreed && 	dist(this.x, this.y, entities[i].x, entities[i].y) < dist(this.x, this.y, this.closest.x, this.closest.y)){
+			if(entities.indexOf(this) != i && abs(this.r - entities[i].r) <= 40 && abs(this.g - entities[i].g) <= 40 && abs(this.b - entities[i].b) <= 40 && entities[i].canBreed && 	dist(this.x, this.y, entities[i].x, entities[i].y) < dist(this.x, this.y, this.closest.x, this.closest.y)){
 				this.closest = {x:entities[i].x, y:entities[i].y};
 				}
 			}
 		}
 		return("Found mate: " + this.foundMate + ", Found food: " + this.foundFood);
 	}
-	
-	
-	
-//	this.move = function(){
-//		this.x += this.xSpeed;
-//		this.y += this.ySpeed;
-//		//lifeSpan decreases every 30 frames (1 sec)
-//		this.lifeSpan -= 1/30;
-//		this.frames++;
-//		if (this.frames >= 15){
-//				this.frames = 0;
-//			}
-//		
-//		if(this.xSpeed >= 8 || this.xSpeed <= -8){
-//		   this.xSpeed = this.xSpeed - ceil(.3 * this.xSpeed);
-//		   }
-//		if (this.ySpeed >= 8 || this.ySpeed <= -8){
-//			this.ySpeed = this.ySpeed - ceil(.3 * this.ySpeed);
-//			}
-//		//Every 15 frames after they are born they age and have have the opportunity to change direction
-//		if(this.frames == 0){
-//			this.size += this.growth;
-//			var move = ceil(random(-1,3));
-//			if(move == 0){
-//			   this.ySpeed += ceil(random(-3,2));
-//			   }
-//			else if (move == 1){
-//				this.xSpeed += ceil(random(-3,2));
-//				}
-//			else if (move == 2){
-//				this.ySpeed += ceil(random(-3,2));
-//				this.xSpeed += ceil(random(-3,2));
-//				}else{
-//				}
-//			
-//			if(this.x > windowWidth - 20){
-//				this.xSpeed = abs(this.xSpeed) * -1;
-//			}
-//			if(this.x < 20){
-//				this.xSpeed = abs(this.xSpeed);
-//			}
-//			if(this.y < 20){
-//				this.ySpeed = abs(this.ySpeed);
-//			}
-//			if(this.y > windowHeight - 20){
-//				this.ySpeed = abs(this.ySpeed) * -1;
-//			}
-//			
-//		}
-//	}
 }
