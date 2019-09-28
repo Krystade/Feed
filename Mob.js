@@ -26,13 +26,6 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.g = g
 	this.b = b
 	this.color = color(r,g,b,this.lifeSpan * 5)
-		
-	//If there isn't any food, don't move
-	if (foods.length <= 0){
-		this.closest = {x:this.x, y:this.y}
-	}else{
-		this.closest = {x:-width, y:-height}
-	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 		
@@ -81,7 +74,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		this.x += this.xSpeed
 		this.y += this.ySpeed
 		//lifeSpan decreases every 30 frames (1 sec)
-		this.lifeSpan -= 1/30
+		this.lifeSpan -= 1/fr
 		this.frames++
 		if (this.frames >= 15){
 				this.frames = 0
@@ -131,8 +124,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			if (abs(this.r - other.r) <= 40 && abs(this.g - other.g) <= 40 && abs(this.b - other.b) <= 40 && this.canBreed && other.canBreed){
 			 //Prevent crashing the window through infinite breeding
 			 this.canBreed = false
-			 //Only allow breeding every x frames
-			 this.breedCoolDown = 30 * 30
+			 //Only allow breeding every x seconds
+			 this.breedCoolDown = fr * 30
 			 return true
 			 this.search(entities, foods)
 			}
@@ -170,7 +163,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			this.closest = {x:foods[0].x,y:foods[0].y}
 
 		}else{
-			this.closest = {x:width / 2, y:height / 2}
+			// If there isnt any food left dont move
+			this.closest = this.closest = {x:this.x, y:this.y}
 		}
 		//Check if there is a mate
 		for (var i = 0; i < entities.length; i++){
