@@ -6,6 +6,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.maxSize = 300
 	this.xSpeed = .0001//random(-4,3)
 	this.ySpeed = .0001//random(-4,3)
+	this.maxXSpeed = 20
+	this.maxYSpeed = 20
 	this.baseSpeed = random(0,2)
 	this.shape = shape
 	
@@ -80,14 +82,14 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 				this.frames = 0
 			}
 		//Speed Managment
-		//If a mob moves faster than 10 pixels a frame in the x direction, slow it down to 6
-		if(this.xSpeed >= 10 || this.xSpeed <= -10){
-		   this.xSpeed = this.xSpeed/abs(this.xSpeed) * 10
+		//If a mob moves faster than the max pixels a frame in the x direction, slow it down to the max
+		if(this.xSpeed >= this.maxXSpeed || this.xSpeed <= -this.maxXSpeed){
+		   this.xSpeed = this.xSpeed/abs(this.xSpeed) * this.maxXSpeed
 		   }
 		
 		//If a mob moves faster than 10 pixels a frame in the y direction, slow it down to 6
-		if (this.ySpeed >= 10 || this.ySpeed <= -10){
-			this.ySpeed = this.ySpeed/abs(this.ySpeed) * 10
+		if (this.ySpeed >= this.maxYSpeed || this.ySpeed <= -this.maxYSpeed){
+			this.ySpeed = this.ySpeed/abs(this.ySpeed) * this.maxYSpeed
 		}
 		//Move towards nearest target (food or mate)
 		if(this.x + this.size / 2 > this.closest.x - this.closest.size / 2 || this.x - this.size / 2 < this.closest.x + this.closest.size / 2){
