@@ -18,8 +18,6 @@
 **
 ** DROP DOWN MENU - fill out the menu with more options. maybe change growth rate and food rate.
 **
-** Display which colors are the most dominante. maybe top 3 colors that have the highest populations
-**
 ** Adjust the times that mobs are able to split rather than breed
 **
 ** "collision" for multiple shapes
@@ -36,19 +34,20 @@
 */
 
 // Variable used to retain how much scaling should occur
-// zoom has to be log(1) so the scale is 1
-var zoom = Math.log(1)
+// zoom has to be log(.5) so the scale is .5
+var zoom = Math.log(.5)
 // Variable used to retain how much translation should occur
 var trans = [0,0]
 // How quickly entities grow
 var growthTimer = 0	
 // How quickly food spawns
-var foodRate = .5	
+var foodRate = 1
 // Frame rate cap. number of frames per second
 var fr = 30
 
 var entities = []
 var foods = []
+var colors = []
 var pressed = 0
 var menuPressed = false
 
@@ -63,7 +62,7 @@ function setup() {
 	menu = new Menu(30, 90)
 
 	
-	for(var i = 0; i < 10; i++){		
+	for(var i = 0; i < 50; i++){		
 		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "circle"))
 		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "square"))
 		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "triangle"))
@@ -96,7 +95,6 @@ function draw() {
 	// Move all entities right simulating the view moving left
 	if (keyIsDown(LEFT_ARROW)){
 		trans[0] = trans[0] + 50
-		print("Left")
     }	
 	// Move view up
 	if (keyIsDown(UP_ARROW)){
@@ -135,6 +133,9 @@ function draw() {
 	for(var i = 0; i < foods.length; i++){
 		foods[i].display()
 	}
+	// Clear out the colors to refill them with new values
+	colors = []
+	
 	for(var i = 0; i < entities.length; i++){
 		if(entities[i].lifeSpan <= 0){
 			if(i == 0){
@@ -186,6 +187,41 @@ function draw() {
 			}
 		}
 		
+		// Checking if the entities color is already in the list
+		// If it is add to the count
+		// If it is not add the color to the list
+		colorMatched = false
+		for(var j = 0; j < colors.length; j++){
+			if(entities[i].r == colors[j][0] &&
+			  entities[i].g == colors[j][1] &&
+			  entities[i].b == colors[j][2]){
+				colors[j][3] = colors[j][3] + 1
+				colorMatched = true
+			}else{}
+		}
+		if(!colorMatched){
+			colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
+		}
+	}
+	// Find which colors have the most circles
+	temp = []
+	topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
+	for(var i = 0; i < colors.length; i++){
+		if(colors[i][3] > topColors[2][3]){
+			topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+			
+			if(colors[i][3] > topColors[1][3]){
+				temp = topColors[1]
+				topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+				topColors[2] = temp
+				
+				if(colors[i][3] > topColors[0][3]){
+					temp = topColors[0]
+					topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+					topColors[1] = temp
+				}
+			}
+		}
 	}
 	// push() at start of draw so the text stays in view
 	pop()
@@ -199,7 +235,11 @@ function draw() {
 	if(menuPressed == true){
 		menu.displayBox()
 	}else{}
-
+	for(var i = 0; i < topColors.length; i++){
+		fill(topColors[i][0], topColors[i][1], topColors[i][2])
+		ellipse(200 + 50 * i, 50, 15)
+		text(topColors[i][3], 200 + 50 * i, 38)
+	}
 	pop()
 	
 	trans = [tempTrans[0], tempTrans[1]]
@@ -226,6 +266,12 @@ function draw() {
 		growthTimer--
 		text ("Growth Rate: " + growth, windowWidth - 60, 100)
 	}
+	textAlign(RIGHT)
+	fill(255)
+	// Display the current framerate
+	text(str(round(frameRate())), windowWidth - 10, 25)
+	textSize(20)	
+	text(str(mouseX) + ", " + str(mouseY), mouseX + 40, mouseY)
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
