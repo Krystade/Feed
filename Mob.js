@@ -2,14 +2,15 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	//Location and Speed
 	this.x = x
 	this.y = y
-	this.size= size
-	this.maxSize = 300
+	this.size = size
+	this.maxSize = size * 2
 	this.xSpeed = .0001//random(-4,3)
 	this.ySpeed = .0001//random(-4,3)
-	this.maxXSpeed = 20
-	this.maxYSpeed = 20
-	this.baseSpeed = random(0,2)
+	this.baseSpeed = random(1,5)
+	this.maxXSpeed = this.baseSpeed * 8
+	this.maxYSpeed = this.baseSpeed * 8
 	this.shape = shape
+	this.sector = 0
 	
 	//Aging and Growth
 	this.frames = ceil(random(0,10))
@@ -52,7 +53,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		stroke(1)
 		textAlign(CENTER)
 		textSize(this.size * .7)
-		if (this.shape == "circle"){
+		/*if (this.shape == "circle"){
 			text(ceil(this.lifeSpan), this.x, this.y - this.size * .6)
 		}else if (this.shape == "square"){
 			text(ceil(this.lifeSpan), this.x + this.size / 2, this.y - this.size * .4)
@@ -60,7 +61,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			text(ceil(this.lifeSpan), this.x + this.size / 3, this.y - this.size * 1.3)
 		}else {
 			text(ceil(this.lifeSpan), this.x, this.y - this.size * .6)
-		}	
+		}	*/
 		//Every 15 frames after they are born they grow unless they are at the max size
 		if(this.frames == 0 && this.size < this.maxSize){
 			this.size += this.growth
@@ -175,13 +176,11 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			}
 		}
 		//Finding which food is closest
-		if(foods[0] != undefined){
-			if(foods.length != 0){
-				for (var i = 0; i < foods.length; i++){
-					if (dist(this.x, this.y, foods[i].x, foods[i].y) < dist(this.x, this.y, this.closest.x, this.closest.y)){
-						this.closest = {x:foods[i].x, y:foods[i].y}
-						this.foundFood = true
-					}
+		if(foods[0]){
+			for (var i = 0; i < foods.length; i++){
+				if (dist(this.x, this.y, foods[i].x, foods[i].y) < dist(this.x, this.y, this.closest.x, this.closest.y)){
+					this.closest = {x:foods[i].x, y:foods[i].y}
+					this.foundFood = true
 				}
 			}
 		}
@@ -199,4 +198,15 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			return
 		}*/
 	}
+	
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	this.isInside = function(dimensions){
+		if(this.x >= dimensions[0] && this.x < dimensions[1] && this.y >= dimensions[2] && this.y < dimensions[3]){
+			return true
+		}else{
+			return false
+		}
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 }
