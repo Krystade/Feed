@@ -1,7 +1,3 @@
-//************FIXED************
-// Ungrouping now works with larger game areas (width and height)
-
-
 /*
 ** TO FIX
 ** 
@@ -16,11 +12,15 @@
 /*
 ** TO DO
 **
-** DROP DOWN MENU - fill out the menu with more options. maybe change growth rate and food rate.
+** DROP DOWN MENU - fill out the menu with more options:
+**			growthRate
+**			foodRate
+**			Color picker
+**			clear Food
 **
 ** Adjust the times that mobs are able to split rather than breed
 **
-** "collision" for multiple shapes
+** "collision" for multiple shapes when eating food
 ** Zooming in on mouse cursor not 0,0
 ** fighting?
 ** Collision between mobs
@@ -41,7 +41,7 @@ var trans = [0,0]
 // How quickly entities grow
 var growthTimer = 0	
 // How quickly food spawns
-var foodRate = 1
+var foodRate = 1.5
 // Frame rate cap. number of frames per second
 var fr = 30
 
@@ -51,22 +51,32 @@ var colors = []
 var pressed = 0
 var menuPressed = false
 
+var sectorDimensions = []
+var sectorSize = 2920
+var sectors = []
+
+
 
 function setup() {	
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
 	// Setting the area that food is allowed to spawn in
-	aWidth = 10000
-	aHeight = 10000
+	aWidth = 20000
+	aHeight = 20000
 	
+	for(var i = -200; i < (aWidth + 200); i += sectorSize){
+		for(var j = -200; j < (aHeight + 200); j += sectorSize){
+			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j,j + sectorSize, i, i + sectorSize])
+		}
+	}
 	menu = new Menu(30, 90)
 
 	
-	for(var i = 0; i < 50; i++){		
+	for(var i = 0; i < 100; i++){		
 		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "circle"))
 		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "square"))
 		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "triangle"))
-		entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, 60, 10, foods, "circle"))
+		entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
 	}
 	entities.push(new Mob(104, 40, 186, 0, 0, 60, 10, foods, "circle"))
 	for(var i = 0; i < 50; i++){
@@ -92,6 +102,11 @@ function draw() {
 	scale(scaleNum)
 	translate(trans[0], trans[1])
 
+	for(var i = 0; i < sectorDimensions.length; i++){
+		fill(200)
+		rect(sectorDimensions[i][0],sectorDimensions[i][2], sectorSize, sectorSize)
+	}
+	
 	// Move all entities right simulating the view moving left
 	if (keyIsDown(LEFT_ARROW)){
 		trans[0] = trans[0] + 50
@@ -113,7 +128,7 @@ function draw() {
 	if (mouseIsPressed){
 		pressed++
 		if(pressed % 2 == 0 && pressed > 10){
-			entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX * (1/scaleNum) - trans[0],  mouseY * (1/scaleNum) - trans[1], 20, 10, foods, "circle"))
+			entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX * (1/scaleNum) - trans[0],  mouseY * (1/scaleNum) - trans[1], 60, 10, foods, "circle"))
 		}
 	}else{
 		pressed = 0
@@ -135,7 +150,13 @@ function draw() {
 	}
 	// Clear out the colors to refill them with new values
 	colors = []
-	
+	// Check to see if the entity moved into a new sector
+	// If it did, move it into the new sector array
+	sectors = []
+	for(var i = 0; i < sectorDimensions.length; i++){
+		sectors.push([])
+	}
+	// Remove dead entities
 	for(var i = 0; i < entities.length; i++){
 		if(entities[i].lifeSpan <= 0){
 			if(i == 0){
@@ -146,10 +167,20 @@ function draw() {
 			}
 		}
 		if (entities[i]){
+			// Find which food and which breedable entity is the closest
 			entities[i].search(entities, foods)
-			entities[i].display()
+			// Move the entity
 			entities[i].move()
+			for(var j = 0; j < sectorDimensions.length; j++){
+				if(entities[i].isInside(sectorDimensions[j])){
+					sectors[j].push(entities[i])
+				}
+			}
+			
+			// If the entity can split have it split
 			entities[i].separate()
+			// Draw the entity to the canvas
+			entities[i].display()
 			for(var j = i + 1; j < entities.length; j++){
 				if(entities[i].breed(entities[j])){
 					entities[i].canBreed = false
@@ -185,22 +216,29 @@ function draw() {
 			}else{
 				entities[i].canBreed = true
 			}
+			// Checking if the entities color is already in the list
+			// If it is add to the count
+			// If it is not add the color to the list
+			colorMatched = false
+			for(var j = 0; j < colors.length; j++){
+				if(entities[i].r == colors[j][0] &&
+				  entities[i].g == colors[j][1] &&
+				  entities[i].b == colors[j][2]){
+					colors[j][3] = colors[j][3] + 1
+					colorMatched = true
+				}else{}
+			}
+			if(!colorMatched){
+				colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
+			}
 		}
-		
-		// Checking if the entities color is already in the list
-		// If it is add to the count
-		// If it is not add the color to the list
-		colorMatched = false
-		for(var j = 0; j < colors.length; j++){
-			if(entities[i].r == colors[j][0] &&
-			  entities[i].g == colors[j][1] &&
-			  entities[i].b == colors[j][2]){
-				colors[j][3] = colors[j][3] + 1
-				colorMatched = true
-			}else{}
-		}
-		if(!colorMatched){
-			colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
+	}
+	for(var i = 0; i < foods.length; i++){
+		for(var j = 0; j < sectorDimensions.length; j++){
+			if(foods[i].isInside(sectorDimensions[j])){
+				sectors[j].push(foods[i])
+				break
+			}
 		}
 	}
 	// Find which colors have the most circles
@@ -251,7 +289,11 @@ function draw() {
 	time = frameCount / fr
 	minutes = Math.floor(time / 60)
 	time = floor(time - minutes * 60)
-	text("Time:  " + minutes + ":" + time, 20, 45)
+	if(time < 10){
+		text("Time:  " + minutes + ":0" + time, 20, 45)
+	}else{
+		text("Time:  " + minutes + ":" + time, 20, 45)
+	}
 	text("Population: " + entities.length, 20, 65)
 	//Instructions
 	textAlign(CENTER)
@@ -268,10 +310,17 @@ function draw() {
 	}
 	textAlign(RIGHT)
 	fill(255)
+	push()
+	fill(0)
+	textAlign(CENTER)
 	// Display the current framerate
 	text(str(round(frameRate())), windowWidth - 10, 25)
-	textSize(20)	
-	text(str(mouseX) + ", " + str(mouseY), mouseX + 40, mouseY)
+	textSize(15)
+	// Display the x and y position of the mouse in the area
+	text(str(round(mouseX * (1/scaleNum) - trans[0])) + ", " + str(round(mouseY * (1/scaleNum) - trans[1])), mouseX, mouseY - 20)
+	// Display the x and y position of the mouse in the screen
+	text(str(mouseX) + ", " + str(mouseY), mouseX, mouseY - 5)
+	pop()
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
