@@ -19,6 +19,7 @@ function Menu (x, y) {
 		line(this.x - 10, this.y + 5, this.x + 10, this.y + 5)
 	}
 	this.displayBox = function(){
+		push()
 		fill(230)
 		// Entire container of the menu
 		rect(this.x - this.size/2, this.y + this.size/1.5, this.width, this.height, 12)
@@ -35,6 +36,6 @@ function Menu (x, y) {
 		text("Ungroup",this.x + 20 - this.size/2, this.y + this.size + 10)
 		text("Clear",this.x + 20 - this.size/2, this.y + this.size + 40)
 		text("Create           Circles", this.x + 20 - this.size/2, this.y + this.size + 70)
-		
+		pop()
 	}
 }
