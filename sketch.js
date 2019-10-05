@@ -1,7 +1,6 @@
 /*
 ** TO FIX
 ** 
-** Text looks bad on different computers not sure if i fixed it
 ** BREEDING NOT WORKING
 **
 ** Different shapes attract to each other
@@ -12,6 +11,9 @@
 /*
 ** TO DO
 **
+** Put in some millis() to track how long functions take to run
+** Look into anonymous functions and make them not anonymous
+** Use a for of loop in mob.search
 ** DROP DOWN MENU - fill out the menu with more options:
 **			growthRate
 **			foodRate
@@ -33,15 +35,18 @@
 ** maybe have combined lifespan count as score or most circles on the screen for the longest time. a mix of both would be good. give a multiplier of something like 1.1 or something for each aditional entity of the same color
 */
 
+p5.disableFriendlyErrors = true
+
 // Variable used to retain how much scaling should occur
 // zoom has to be log(.5) so the scale is .5
 var zoom = Math.log(.5)
 // Variable used to retain how much translation should occur
 var trans = [0,0]
+
 // How quickly entities grow
 var growthTimer = 0	
 // How quickly food spawns
-var foodRate = 1.5
+var foodRate = .5
 // Frame rate cap. number of frames per second
 var fr = 30
 
@@ -52,7 +57,7 @@ var pressed = 0
 var menuPressed = false
 
 var sectorDimensions = []
-var sectorSize = 2920
+var sectorSize = 2000
 var sectors = []
 
 
@@ -61,11 +66,11 @@ function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
 	// Setting the area that food is allowed to spawn in
-	aWidth = 20000
-	aHeight = 20000
+	aWidth = sectorSize * 6
+	aHeight = sectorSize * 6
 	
-	for(var i = -200; i < (aWidth + 200); i += sectorSize){
-		for(var j = -200; j < (aHeight + 200); j += sectorSize){
+	for(var i = 0; i < aWidth; i += sectorSize){
+		for(var j = 0; j < aHeight; j += sectorSize){
 			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j,j + sectorSize, i, i + sectorSize])
 		}
 	}
@@ -73,12 +78,11 @@ function setup() {
 
 	
 	for(var i = 0; i < 100; i++){		
-		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "circle"))
-		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "square"))
-		//entities.push(new Mob(5, 25, 2, 0, 0, 20, 10, foods, "triangle"))
+		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "circle"))
+		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "square"))
+		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
 		entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
 	}
-	entities.push(new Mob(104, 40, 186, 0, 0, 60, 10, foods, "circle"))
 	for(var i = 0; i < 50; i++){
 		foods.push(new Food(ceil(random(30,aWidth)),ceil(random(30,aHeight))))
 	}
@@ -86,7 +90,7 @@ function setup() {
 }
 
 function draw() {
-	push()
+		push()
 	// Controls adjusting growth rate
 	if (entities.length > 0){
 		growth = entities[0].growth
@@ -148,16 +152,18 @@ function draw() {
 	for(var i = 0; i < foods.length; i++){
 		foods[i].display()
 	}
-	// Clear out the colors to refill them with new values
-	colors = []
-	// Check to see if the entity moved into a new sector
-	// If it did, move it into the new sector array
+	// Reset the sector array and fill it with empty arrays
 	sectors = []
-	for(var i = 0; i < sectorDimensions.length; i++){
+	for(var i = 0; i < Math.sqrt(sectorDimensions.length); i++){
 		sectors.push([])
+		for(var j = 0; j < Math.sqrt(sectorDimensions.length); j++){
+			sectors[i].push([])
+		}
 	}
-	// Remove dead entities
+	// Clear out the colors array to refill them with new values
+	colors = []
 	for(var i = 0; i < entities.length; i++){
+		// Remove dead entities
 		if(entities[i].lifeSpan <= 0){
 			if(i == 0){
 				entities.shift()
@@ -166,14 +172,20 @@ function draw() {
 				i--
 			}
 		}
+		// Make sure the entity is valid
 		if (entities[i]){
-			// Find which food and which breedable entity is the closest
-			entities[i].search(entities, foods)
 			// Move the entity
 			entities[i].move()
-			for(var j = 0; j < sectorDimensions.length; j++){
-				if(entities[i].isInside(sectorDimensions[j])){
-					sectors[j].push(entities[i])
+			// Filling the sectors array
+			for(var j = 0; j < sectors.length; j++){
+				for(var k = 0; k < sectors[j].length; k++){
+					if(entities[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
+					sectors[j][k].push(entities[i])
+					entities[i].sector = [j, k]
+					entities[i].sectorsAdj = [ [j-1, k-1],[j-1, k],[j-1, k+1],
+											   [j, k-1]  ,[j, k]  ,[j, k+1],
+											   [j+1, k-1],[j+1, k],[j+1, k+1] ]
+					}
 				}
 			}
 			
@@ -188,7 +200,7 @@ function draw() {
 					entities[i].foundMate = false
 					entities[j].foundMate = false
 					entities.push(new Mob((entities[i].r + entities[j].r)/2, (entities[i].g + entities[j].g)/2, (entities[i].b + entities[j].b)/2, (entities[i].x + entities[j].x)/2, (entities[i].y + entities[j].y)/2, 50, 10, foods, entities[i].shape))
-					entities[entities.length -1].search(entities, foods)
+					entities[entities.length -1]
 					entities[i].lifeSpan -= 5
 					entities[j].lifeSpan -= 5
 				}
@@ -205,11 +217,10 @@ function draw() {
 							foods.splice(j,1)
 							j--
 						}  
-						entities[i].lifeSpan += 2
+						entities[i].lifeSpan += foods[j].value
 					}
 				}
 			}
-
 			//Keep track of breed ability as time goes on
 			if (entities[i].breedCoolDown > 0){
 				entities[i].breedCoolDown -= 1
@@ -234,12 +245,19 @@ function draw() {
 		}
 	}
 	for(var i = 0; i < foods.length; i++){
-		for(var j = 0; j < sectorDimensions.length; j++){
-			if(foods[i].isInside(sectorDimensions[j])){
-				sectors[j].push(foods[i])
-				break
+		for(var j = 0; j < sectors.length; j++){
+			for(var k = 0; k < sectors[j].length; k++){
+				if(foods[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
+					sectors[k][j].push(foods[i])
+					break
+				}
 			}
 		}
+	}
+	// Can't be in the first entities loop because the sector aray has not been filled yet
+	for(var i = 0; i < entities.length; i++){
+		// Find which food and which breedable entity is the closest
+			entities[i].search(entities, foods)
 	}
 	// Find which colors have the most circles
 	temp = []
@@ -314,12 +332,12 @@ function draw() {
 	fill(0)
 	textAlign(CENTER)
 	// Display the current framerate
-	text(str(round(frameRate())), windowWidth - 10, 25)
+	text(str(round(frameRate())), windowWidth - 30, 25)
 	textSize(15)
 	// Display the x and y position of the mouse in the area
 	text(str(round(mouseX * (1/scaleNum) - trans[0])) + ", " + str(round(mouseY * (1/scaleNum) - trans[1])), mouseX, mouseY - 20)
 	// Display the x and y position of the mouse in the screen
-	text(str(mouseX) + ", " + str(mouseY), mouseX, mouseY - 5)
+	text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
 	pop()
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
