@@ -11,6 +11,8 @@
 /*
 ** TO DO
 **
+** Fix line 165 in mob, it is the same as line 119 i think
+**
 ** Put in some millis() to track how long functions take to run
 ** Look into anonymous functions and make them not anonymous
 ** Use a for of loop in mob.search
@@ -19,11 +21,12 @@
 **			foodRate
 **			Color picker
 **			clear Food
+**			change food spawning area (Awidth, Aheight)
 **
 ** Adjust the times that mobs are able to split rather than breed
 **
 ** "collision" for multiple shapes when eating food
-** Zooming in on mouse cursor not 0,0
+** Zooming in on mouse cursor not 0, 0
 ** fighting?
 ** Collision between mobs
 **
@@ -36,12 +39,14 @@
 */
 
 p5.disableFriendlyErrors = true
-
+// Variable used to pause the game so checking values without anything moving will be easy
+var paused = false
 // Variable used to retain how much scaling should occur
 // zoom has to be log(.5) so the scale is .5
 var zoom = Math.log(.5)
+var oldZoom = Math.log(.5)
 // Variable used to retain how much translation should occur
-var trans = [0,0]
+var trans = [0, 0]
 
 // How quickly entities grow
 var growthTimer = 0	
@@ -62,7 +67,7 @@ var sectors = []
 
 
 
-function setup() {	
+function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
 	// Setting the area that food is allowed to spawn in
@@ -71,274 +76,279 @@ function setup() {
 	
 	for(var i = 0; i < aWidth; i += sectorSize){
 		for(var j = 0; j < aHeight; j += sectorSize){
-			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j,j + sectorSize, i, i + sectorSize])
+			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j, j + sectorSize, i, i + sectorSize])
 		}
 	}
 	menu = new Menu(30, 90)
 
 	
-	for(var i = 0; i < 100; i++){		
+	for(var i = 0; i < 200; i++){		
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "circle"))
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "square"))
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
-		entities.push(new Mob(random(0,255), random(0,255), random(0,255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
+		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
 	}
 	for(var i = 0; i < 50; i++){
-		foods.push(new Food(ceil(random(30,aWidth)),ceil(random(30,aHeight))))
+		foods.push(new Food(ceil(random(30, aWidth)), ceil(random(30, aHeight))))
 	}
 	ungroup()
 }
 
 function draw() {
+	if(!paused){
 		push()
-	// Controls adjusting growth rate
-	if (entities.length > 0){
-		growth = entities[0].growth
-	}else{
-		growth = 2
-	}
-	// Set the background color
-	background (200)
-	// Number to scale the canvas by
-	scaleNum = Math.pow(10, zoom)	
+		// Controls adjusting growth rate
+		if (entities.length > 0){
+			growth = entities[0].growth
+		}else{
+			growth = 2
+		}
+		// Set the background color
+		background (200)
+		// Number to scale the canvas by
+		scaleNum = Math.pow(10, zoom)
 
-	// Scale and translate all entities to simulate zooming and moving
-	scale(scaleNum)
-	translate(trans[0], trans[1])
+		// Scale and translate all entities to simulate zooming and moving
+		scale(scaleNum)
+		translate(trans[0], trans[1])
 
-	for(var i = 0; i < sectorDimensions.length; i++){
-		fill(200)
-		rect(sectorDimensions[i][0],sectorDimensions[i][2], sectorSize, sectorSize)
-	}
-	
-	// Move all entities right simulating the view moving left
-	if (keyIsDown(LEFT_ARROW)){
-		trans[0] = trans[0] + 50
-    }	
-	// Move view up
-	if (keyIsDown(UP_ARROW)){
-		trans[1] = trans[1] + 50
-    }
-	// Move view right
-	if (keyIsDown(RIGHT_ARROW)){
-		trans[0] = trans[0] - 50
-    }
-	// Move view down
-	if (keyIsDown(DOWN_ARROW)){
-		trans[1] = trans[1] - 50
-    }
-	
-	//Detect if the mouse is being held down to make a mob every 3 frames
-	if (mouseIsPressed){
-		pressed++
-		if(pressed % 2 == 0 && pressed > 10){
-			entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX * (1/scaleNum) - trans[0],  mouseY * (1/scaleNum) - trans[1], 60, 10, foods, "circle"))
+		for(var i = 0; i < sectorDimensions.length; i++){
+			fill(200)
+			stroke(170, 170, 170)
+			rect(sectorDimensions[i][0], sectorDimensions[i][2], sectorSize, sectorSize, 5)
 		}
-	}else{
-		pressed = 0
-	}
-	
-	//(foodRate) foods are spawned each frame
-	if (foodRate < 1 && foodRate > 0 && frameCount % (1/foodRate) == 0){
-		foods.push(new Food(random(30,aWidth),random(30,aHeight)))
-	}else if (foodRate >= 1){
-		for (var i = 0; i < foodRate; i++){
-			foods.push(new Food(random(30,aWidth),random(30,aHeight)))
+
+		// Move all entities right simulating the view moving left
+		if (keyIsDown(LEFT_ARROW)){
+			trans[0] = trans[0] + 50
+		}	
+		// Move view up
+		if (keyIsDown(UP_ARROW)){
+			trans[1] = trans[1] + 50
 		}
-	}else{
-	//Don't spawn food if food rate is negative
-	}
-	//Display food
-	for(var i = 0; i < foods.length; i++){
-		foods[i].display()
-	}
-	// Reset the sector array and fill it with empty arrays
-	sectors = []
-	for(var i = 0; i < Math.sqrt(sectorDimensions.length); i++){
-		sectors.push([])
-		for(var j = 0; j < Math.sqrt(sectorDimensions.length); j++){
-			sectors[i].push([])
+		// Move view right
+		if (keyIsDown(RIGHT_ARROW)){
+			trans[0] = trans[0] - 50
 		}
-	}
-	// Clear out the colors array to refill them with new values
-	colors = []
-	for(var i = 0; i < entities.length; i++){
-		// Remove dead entities
-		if(entities[i].lifeSpan <= 0){
-			if(i == 0){
-				entities.shift()
-			}else{
-				entities.splice(i,1)
-				i--
+		// Move view down
+		if (keyIsDown(DOWN_ARROW)){
+			trans[1] = trans[1] - 50
+		}
+
+		//Detect if the mouse is being held down to make a mob every 3 frames
+		if (mouseIsPressed){
+			pressed++
+			if(pressed % 2 == 0 && pressed > 10){
+				entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+			}
+		}else{
+			pressed = 0
+		}
+
+		//(foodRate) foods are spawned each frame
+		if (foodRate < 1 && foodRate > 0 && frameCount % (1/foodRate) == 0){
+			foods.push(new Food(random(30, aWidth), random(30, aHeight)))
+		}else if (foodRate >= 1){
+			for (var i = 0; i < foodRate; i++){
+				foods.push(new food(random(30, aWidth), random(30, aHeight)))
+			}
+		}else{
+		//Don't spawn food if food rate is negative
+		}
+		//Display food
+		for(var i = 0; i < foods.length; i++){
+			foods[i].display()
+		}
+		// Reset the sector array and fill it with empty arrays
+		sectors = []
+		for(var i = 0; i < Math.sqrt(sectorDimensions.length); i++){
+			sectors.push([])
+			for(var j = 0; j < Math.sqrt(sectorDimensions.length); j++){
+				sectors[i].push([])
 			}
 		}
-		// Make sure the entity is valid
-		if (entities[i]){
-			// Move the entity
-			entities[i].move()
-			// Filling the sectors array
+		// Clear out the colors array to refill them with new values
+		colors = []
+		for(var i = 0; i < entities.length; i++){
+			// Remove dead entities
+			if(entities[i].lifeSpan <= 0){
+				if(i == 0){
+					entities.shift()
+				}else{
+					entities.splice(i, 1)
+					i--
+				}
+			}
+			// Make sure the entity is valid
+			if (entities[i]){
+				// Move the entity
+				entities[i].move()
+				// Filling the sectors array
+				for(var j = 0; j < sectors.length; j++){
+					for(var k = 0; k < sectors[j].length; k++){
+						if(entities[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
+						sectors[j][k].push(entities[i])
+						entities[i].sector = [j, k]
+						entities[i].sectorsAdj = [ [j-1, k-1], [j-1, k], [j-1, k+1], 
+												   [j, k-1]  , [j, k]  , [j, k+1], 
+												   [j+1, k-1], [j+1, k], [j+1, k+1] ]
+						}
+					}
+				}
+
+				// If the entity can split have it split
+				//entities[i].separate()
+				// Draw the entity to the canvas
+				entities[i].display()
+				/*for(var j = i + 1; j < entities.length; j++){
+					if(entities[i].breed(entities[j])){
+						entities[i].canBreed = false
+						entities[j].canBreed = false
+						entities[i].foundMate = false
+						entities[j].foundMate = false
+						entities.push(new Mob((entities[i].r + entities[j].r)/2, (entities[i].g + entities[j].g)/2, (entities[i].b + entities[j].b)/2, (entities[i].x + entities[j].x)/2, (entities[i].y + entities[j].y)/2, 50, 10, foods, entities[i].shape))
+						entities[i].lifeSpan -= 5
+						entities[j].lifeSpan -= 5
+					}
+				}*/
+
+				for(var j = 0; j < foods.length; j++){
+				//Check if the mob exists and if it is within range of food
+					if(foods[j]){
+						if(entities[i].eats(foods[j])){
+							//If it does remove the food and lengthen the mob's life
+							if(j == 0){
+								foods.shift()
+							}else{
+								foods.splice(j, 1)
+								j--
+							}  
+							entities[i].lifeSpan += foods[j].value
+						}
+					}
+				}
+				//Keep track of breed ability as time goes on
+				if (entities[i].breedCoolDown > 0){
+					entities[i].breedCoolDown -= 1
+				}else{
+					entities[i].canBreed = true
+				}
+				// Checking if the entities color is already in the list
+				// If it is add to the count
+				// If it is not add the color to the list
+				colorMatched = false
+				for(var j = 0; j < colors.length; j++){
+					if(entities[i].r == colors[j][0] &&
+					  entities[i].g == colors[j][1] &&
+					  entities[i].b == colors[j][2]){
+						colors[j][3] = colors[j][3] + 1
+						colorMatched = true
+					}else{}
+				}
+				if(!colorMatched){
+					colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
+				}
+			}
+		}
+		for(var i = 0; i < foods.length; i++){
 			for(var j = 0; j < sectors.length; j++){
 				for(var k = 0; k < sectors[j].length; k++){
-					if(entities[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
-					sectors[j][k].push(entities[i])
-					entities[i].sector = [j, k]
-					entities[i].sectorsAdj = [ [j-1, k-1],[j-1, k],[j-1, k+1],
-											   [j, k-1]  ,[j, k]  ,[j, k+1],
-											   [j+1, k-1],[j+1, k],[j+1, k+1] ]
+					if(foods[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
+						sectors[k][j].push(foods[i])
+						break
 					}
 				}
 			}
-			
-			// If the entity can split have it split
-			entities[i].separate()
-			// Draw the entity to the canvas
-			entities[i].display()
-			for(var j = i + 1; j < entities.length; j++){
-				if(entities[i].breed(entities[j])){
-					entities[i].canBreed = false
-					entities[j].canBreed = false
-					entities[i].foundMate = false
-					entities[j].foundMate = false
-					entities.push(new Mob((entities[i].r + entities[j].r)/2, (entities[i].g + entities[j].g)/2, (entities[i].b + entities[j].b)/2, (entities[i].x + entities[j].x)/2, (entities[i].y + entities[j].y)/2, 50, 10, foods, entities[i].shape))
-					entities[entities.length -1]
-					entities[i].lifeSpan -= 5
-					entities[j].lifeSpan -= 5
-				}
-			}
+		}
+		// Can't be in the first entities loop because the sector aray has not been filled yet
+		for(var i = 0; i < entities.length; i++){
+			// Find which food and which breedable entity is the closest
+				entities[i].search(entities, foods)
+		}
+		// Find which colors have the most circles
+		temp = []
+		topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
+		for(var i = 0; i < colors.length; i++){
+			if(colors[i][3] > topColors[2][3]){
+				topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 
-			for(var j = 0; j < foods.length; j++){
-			//Check if the mob exists and if it is within range of food
-				if(foods[j]){
-					if(entities[i].eats(foods[j])){
-						//If it does remove the food and lengthen the mob's life
-						if(j == 0){
-							foods.shift()
-						}else{
-							foods.splice(j,1)
-							j--
-						}  
-						entities[i].lifeSpan += foods[j].value
+				if(colors[i][3] > topColors[1][3]){
+					temp = topColors[1]
+					topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+					topColors[2] = temp
+
+					if(colors[i][3] > topColors[0][3]){
+						temp = topColors[0]
+						topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+						topColors[1] = temp
 					}
 				}
 			}
-			//Keep track of breed ability as time goes on
-			if (entities[i].breedCoolDown > 0){
-				entities[i].breedCoolDown -= 1
-			}else{
-				entities[i].canBreed = true
-			}
-			// Checking if the entities color is already in the list
-			// If it is add to the count
-			// If it is not add the color to the list
-			colorMatched = false
-			for(var j = 0; j < colors.length; j++){
-				if(entities[i].r == colors[j][0] &&
-				  entities[i].g == colors[j][1] &&
-				  entities[i].b == colors[j][2]){
-					colors[j][3] = colors[j][3] + 1
-					colorMatched = true
-				}else{}
-			}
-			if(!colorMatched){
-				colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
-			}
 		}
-	}
-	for(var i = 0; i < foods.length; i++){
-		for(var j = 0; j < sectors.length; j++){
-			for(var k = 0; k < sectors[j].length; k++){
-				if(foods[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
-					sectors[k][j].push(foods[i])
-					break
-				}
-			}
+		// push() at start of draw so the text stays in view
+		pop()
+		// push() to keep the menu button in the top right corner
+		tempTrans = [trans[0], trans[1]]
+		push()
+		scale(1)
+		trans = [0, 0]
+		// Drawing the menu button and all the menu details
+		menu.display()
+		if(menuPressed == true){
+			menu.displayBox()
+		}else{}
+		for(var i = 0; i < topColors.length; i++){
+			fill(topColors[i][0], topColors[i][1], topColors[i][2])
+			ellipse(200 + 50 * i, 50, 15)
+			text(topColors[i][3], 200 + 50 * i, 38)
 		}
-	}
-	// Can't be in the first entities loop because the sector aray has not been filled yet
-	for(var i = 0; i < entities.length; i++){
-		// Find which food and which breedable entity is the closest
-			entities[i].search(entities, foods)
-	}
-	// Find which colors have the most circles
-	temp = []
-	topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
-	for(var i = 0; i < colors.length; i++){
-		if(colors[i][3] > topColors[2][3]){
-			topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
-			
-			if(colors[i][3] > topColors[1][3]){
-				temp = topColors[1]
-				topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
-				topColors[2] = temp
-				
-				if(colors[i][3] > topColors[0][3]){
-					temp = topColors[0]
-					topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
-					topColors[1] = temp
-				}
-			}
+		fill('black')
+		noStroke()
+		text(colors.length + " Unique Colors", 270, 78)
+		pop()
+
+		trans = [tempTrans[0], tempTrans[1]]
+		//Time and Population
+		fill(0)
+		strokeWeight(0)
+		textSize(20)
+		textAlign(LEFT)
+		time = frameCount / fr
+		minutes = Math.floor(time / 60)
+		time = floor(time - minutes * 60)
+		if(time < 10){
+			text("Time:  " + minutes + ":0" + time, 20, 45)
+		}else{
+			text("Time:  " + minutes + ":" + time, 20, 45)
 		}
+		text("Population: " + entities.length, 20, 65)
+		//Instructions
+		textAlign(CENTER)
+		text("Click to create 1 circle, hold for many", windowWidth / 2, 25)
+		//Growth Rate
+		fill(35, 224, 67)
+		strokeWeight(1.5)
+		textSize(30)
+		textAlign(RIGHT)
+		//Only have the Growth Rate displayed for a few seconds
+		if (growthTimer > 0){
+			growthTimer--
+			text ("Growth Rate: " + growth, windowWidth - 60, 100)
+		}
+		textAlign(RIGHT)
+		fill(255)
+		push()
+		fill(0)
+		textAlign(CENTER)
+		// Display the current framerate
+		text(str(round(frameRate())), windowWidth - 30, 25)
+		textSize(15)
+		// Display the x and y position of the mouse in the area
+		text(str(round(mouseX * (1/scaleNum) - trans[0])) + ", " + str(round(mouseY * (1/scaleNum) - trans[1])), mouseX, mouseY - 20)
+		// Display the x and y position of the mouse in the screen
+		text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+		pop()
 	}
-	// push() at start of draw so the text stays in view
-	pop()
-	// push() to keep the menu button in the top right corner
-	tempTrans = [trans[0], trans[1]]
-	push()
-	scale(1)
-	trans = [0,0]
-	// Drawing the menu button and all the menu details
-	menu.display()
-	if(menuPressed == true){
-		menu.displayBox()
-	}else{}
-	for(var i = 0; i < topColors.length; i++){
-		fill(topColors[i][0], topColors[i][1], topColors[i][2])
-		ellipse(200 + 50 * i, 50, 15)
-		text(topColors[i][3], 200 + 50 * i, 38)
-	}
-	pop()
-	
-	trans = [tempTrans[0], tempTrans[1]]
-	//Time and Population
-	fill(0)
-	strokeWeight(0)
-	textSize(20)
-	textAlign(LEFT)
-	time = frameCount / fr
-	minutes = Math.floor(time / 60)
-	time = floor(time - minutes * 60)
-	if(time < 10){
-		text("Time:  " + minutes + ":0" + time, 20, 45)
-	}else{
-		text("Time:  " + minutes + ":" + time, 20, 45)
-	}
-	text("Population: " + entities.length, 20, 65)
-	//Instructions
-	textAlign(CENTER)
-	text("Click to create 1 circle, hold for many", windowWidth / 2, 25)
-	//Growth Rate
-	fill(35, 224, 67)
-	strokeWeight(1.5)
-	textSize(30)
-	textAlign(RIGHT)
-	//Only have the Growth Rate displayed for a few seconds
-	if (growthTimer > 0){
-		growthTimer--
-		text ("Growth Rate: " + growth, windowWidth - 60, 100)
-	}
-	textAlign(RIGHT)
-	fill(255)
-	push()
-	fill(0)
-	textAlign(CENTER)
-	// Display the current framerate
-	text(str(round(frameRate())), windowWidth - 30, 25)
-	textSize(15)
-	// Display the x and y position of the mouse in the area
-	text(str(round(mouseX * (1/scaleNum) - trans[0])) + ", " + str(round(mouseY * (1/scaleNum) - trans[1])), mouseX, mouseY - 20)
-	// Display the x and y position of the mouse in the screen
-	text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
-	pop()
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
@@ -406,20 +416,28 @@ function mousePressed() {
 			print("Wait for input for how many circles should be made")
 		}
 	}else{
-		entities.push(new Mob(random(0,255), random(0,255), random(0,255), mouseX * (1/scaleNum) - trans[0],  mouseY * (1/scaleNum) - trans[1], 50, 10, foods, "circle"))
+		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
 	}
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function keyPressed() {
+	//keyCode 32 is spacebar
+	if (keyCode == 32){
+		if(paused){
+			paused = false
+		}else{
+			paused = true
+		}
+	}
 	//keyCode 85 is u
 	if (keyCode == 85){
 		ungroup()
 		}
 	//keyCode 67 is c
 	if (keyCode == 67){
-		entities.splice(0,entities.length)
+		entities.splice(0, entities.length)
 		}
 	//keycode 187 is = or +
 	if (keyCode == 187){
@@ -442,10 +460,60 @@ function keyPressed() {
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function mouseWheel(event) {
+	oldZoom = zoom
 	if(event.delta < 0){
 		zoom = zoom + .05
 	}else{
 		zoom = zoom - .05
 	}
+	
+	//https://stackoverflow.com/questions/2916081/zoom-in-on-a-point-using-scale-and-translate
+
+}
+
+// the following functions are based off of the pseudocode
+// found on www.easyrgb.com
+// I took this code from https://github.com/antimatter15/rgb-lab/blob/master/color.js
+
+function rgb2lab(rgb){
+  var r = rgb[0] / 255, 
+      g = rgb[1] / 255, 
+      b = rgb[2] / 255, 
+      x, y, z;
+
+  r = (r > 0.04045) ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = (g > 0.04045) ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = (b > 0.04045) ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+  x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.00000;
+  z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+  x = (x > 0.008856) ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
+  y = (y > 0.008856) ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
+  z = (z > 0.008856) ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
+
+  return [(116 * y) - 16, 500 * (x - y), 200 * (y - z)]
+}
+
+// calculate the perceptual distance between colors in CIELAB
+// https://github.com/THEjoezack/ColorMine/blob/master/ColorMine/ColorSpaces/Comparisons/Cie94Comparison.cs
+
+function deltaE(labA, labB){
+  var deltaL = labA[0] - labB[0];
+  var deltaA = labA[1] - labB[1];
+  var deltaB = labA[2] - labB[2];
+  var c1 = Math.sqrt(labA[1] * labA[1] + labA[2] * labA[2]);
+  var c2 = Math.sqrt(labB[1] * labB[1] + labB[2] * labB[2]);
+  var deltaC = c1 - c2;
+  var deltaH = deltaA * deltaA + deltaB * deltaB - deltaC * deltaC;
+  deltaH = deltaH < 0 ? 0 : Math.sqrt(deltaH);
+  var sc = 1.0 + 0.045 * c1;
+  var sh = 1.0 + 0.015 * c1;
+  var deltaLKlsl = deltaL / (1.0);
+  var deltaCkcsc = deltaC / (sc);
+  var deltaHkhsh = deltaH / (sh);
+  var i = deltaLKlsl * deltaLKlsl + deltaCkcsc * deltaCkcsc + deltaHkhsh * deltaHkhsh;
+  return i < 0 ? 0 : Math.sqrt(i);
 }
 
