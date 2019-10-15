@@ -4,34 +4,43 @@
 ** BREEDING NOT WORKING
 **
 ** Different shapes attract to each other
-** Handling/steering, go straight at target -- not have a fixed speed to increase/decrease
 ** 
 */
 
 /*
 ** TO DO
 **
-** Fix line 165 in mob, it is the same as line 119 i think
-**
 ** Put in some millis() to track how long functions take to run
 ** Look into anonymous functions and make them not anonymous
-** Use a for of loop in mob.search
+**
 ** DROP DOWN MENU - fill out the menu with more options:
+**			clear Food
+**			place mode: Mob[x] Food[ ]
 **			growthRate
 **			foodRate
-**			Color picker
-**			clear Food
 **			change food spawning area (Awidth, Aheight)
+**			Random Color[ ]		custom color[x]
+**					R:[   ] G:[   ] B:[   ]
 **
 ** Adjust the times that mobs are able to split rather than breed
 **
-** "collision" for multiple shapes when eating food
+** "collision"(hitboxes) for multiple shapes when eating food
 ** Zooming in on mouse cursor not 0, 0
-** fighting?
 ** Collision between mobs
 **
 **
-** GENES
+** 		GENES (each with a value 0-1000) 
+**		(weighted average of two genes when breeding) + random(-x, +x) 
+**		(1/16 chance to completely randomize)
+** amount of life given to offspring
+** required lifespan before breeding (At a certain lifespan look for a mate)
+** minSize, maxSize
+** bordeness (how much time until the mob chooses a different target (food, mob))
+** sight distance (sectors)
+** maybe remove the color requirements for breeding so any of them can breed with any others
+** new form of movement (jumping)(add value to velocity)(slow down mob as time goes on)
+**
+**
 ** make an ai control each mob
 ** give them the ability to split whenever
 ** have a penalty for splitting, maybe only keep 80% of the lifespan or something
@@ -82,7 +91,7 @@ function setup() {
 	menu = new Menu(30, 90)
 
 	
-	for(var i = 0; i < 200; i++){		
+	for(var i = 0; i < 100; i++){		
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "circle"))
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "square"))
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
@@ -200,30 +209,22 @@ function draw() {
 				//entities[i].separate()
 				// Draw the entity to the canvas
 				entities[i].display()
-				/*for(var j = i + 1; j < entities.length; j++){
-					if(entities[i].breed(entities[j])){
-						entities[i].canBreed = false
-						entities[j].canBreed = false
-						entities[i].foundMate = false
-						entities[j].foundMate = false
-						entities.push(new Mob((entities[i].r + entities[j].r)/2, (entities[i].g + entities[j].g)/2, (entities[i].b + entities[j].b)/2, (entities[i].x + entities[j].x)/2, (entities[i].y + entities[j].y)/2, 50, 10, foods, entities[i].shape))
-						entities[i].lifeSpan -= 5
-						entities[j].lifeSpan -= 5
-					}
-				}*/
 
 				for(var j = 0; j < foods.length; j++){
 				//Check if the mob exists and if it is within range of food
 					if(foods[j]){
 						if(entities[i].eats(foods[j])){
+							entities[i].lifeSpan += foods[j].value
+							if(entities[i].feedNeed > 300){
+								entities[i].feedNeed -= foods[j].value * 10
+							}
 							//If it does remove the food and lengthen the mob's life
 							if(j == 0){
 								foods.shift()
 							}else{
 								foods.splice(j, 1)
 								j--
-							}  
-							entities[i].lifeSpan += foods[j].value
+							}
 						}
 					}
 				}
@@ -238,11 +239,11 @@ function draw() {
 				// If it is not add the color to the list
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
-					if(entities[i].r == colors[j][0] &&
-					  entities[i].g == colors[j][1] &&
-					  entities[i].b == colors[j][2]){
+					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 2){
 						colors[j][3] = colors[j][3] + 1
 						colorMatched = true
+						break
+						print("color matched")
 					}else{}
 				}
 				if(!colorMatched){
@@ -417,6 +418,7 @@ function mousePressed() {
 		}
 	}else{
 		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+		//entities.push(new Mob(100, 400, 15, mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
 	}
 }
 
@@ -469,6 +471,13 @@ function mouseWheel(event) {
 	
 	//https://stackoverflow.com/questions/2916081/zoom-in-on-a-point-using-scale-and-translate
 
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+//Computes the average of two values
+function average(value1, value2){
+	return((value1 + value2)/2)
 }
 
 // the following functions are based off of the pseudocode
