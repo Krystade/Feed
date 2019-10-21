@@ -13,9 +13,11 @@
 ** Put in some millis() to track how long functions take to run
 ** Look into anonymous functions and make them not anonymous
 **
+** Move menu outside of the actual game screen so input boxes will be easier to use. Look at some Daniel Shiffman videos
 ** DROP DOWN MENU - fill out the menu with more options:
 **			clear Food
 **			place mode: Mob[x] Food[ ]
+**			click mode: delete[ ] place[x]
 **			growthRate
 **			foodRate
 **			change food spawning area (Awidth, Aheight)
@@ -60,7 +62,7 @@ var trans = [0, 0]
 // How quickly entities grow
 var growthTimer = 0	
 // How quickly food spawns
-var foodRate = .5
+var foodRate = .25
 // Frame rate cap. number of frames per second
 var fr = 30
 
@@ -80,8 +82,8 @@ function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
 	// Setting the area that food is allowed to spawn in
-	aWidth = sectorSize * 6
-	aHeight = sectorSize * 6
+	aWidth = sectorSize * 12
+	aHeight = sectorSize * 12
 	
 	for(var i = 0; i < aWidth; i += sectorSize){
 		for(var j = 0; j < aHeight; j += sectorSize){
@@ -113,7 +115,7 @@ function draw() {
 			growth = 2
 		}
 		// Set the background color
-		background (200)
+		background (210, 220, 235)
 		// Number to scale the canvas by
 		scaleNum = Math.pow(10, zoom)
 
@@ -122,26 +124,28 @@ function draw() {
 		translate(trans[0], trans[1])
 
 		for(var i = 0; i < sectorDimensions.length; i++){
-			fill(200)
-			stroke(170, 170, 170)
+			//Just want the outline of the sectors
+			noFill()
+			//Make the outline a light grey color
+			stroke(150)
 			rect(sectorDimensions[i][0], sectorDimensions[i][2], sectorSize, sectorSize, 5)
 		}
 
 		// Move all entities right simulating the view moving left
 		if (keyIsDown(LEFT_ARROW)){
-			trans[0] = trans[0] + 50
+			trans[0] += 125
 		}	
 		// Move view up
 		if (keyIsDown(UP_ARROW)){
-			trans[1] = trans[1] + 50
+			trans[1] += 125
 		}
 		// Move view right
 		if (keyIsDown(RIGHT_ARROW)){
-			trans[0] = trans[0] - 50
+			trans[0] -= 125
 		}
 		// Move view down
 		if (keyIsDown(DOWN_ARROW)){
-			trans[1] = trans[1] - 50
+			trans[1] -= 125
 		}
 
 		//Detect if the mouse is being held down to make a mob every 3 frames
@@ -239,7 +243,7 @@ function draw() {
 				// If it is not add the color to the list
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
-					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 2){
+					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 5){
 						colors[j][3] = colors[j][3] + 1
 						colorMatched = true
 						break
@@ -369,6 +373,23 @@ function ungroup(){
 			break
 		}
 	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+// Currently only used in changing mutating color, range will be from 0-255 for food but likely 0 - 1000 for other genes when implemented
+function mutate(gene, range){
+	rand = random()
+	if(rand < .8){
+		//Subtracting .5 so the random number is from -.5 to +.5
+		gene = gene + (random() - .5)*10
+	}else if(rand < .96){
+		gene = gene + (random() - .5)*20
+	}else{
+		gene = random(0,range)
+		print("Random Gene")
+	}
+	return gene
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
