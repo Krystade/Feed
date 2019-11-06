@@ -2,7 +2,7 @@
 ** TO FIX
 ** 
 ** BREEDING NOT WORKING
-**
+** Pause doesnt allow for scrolling/zooming
 ** Different shapes attract to each other
 ** 
 */
@@ -10,14 +10,17 @@
 /*
 ** TO DO
 **
+** Add option to group by species(color)
+**
+** Fix maxspeed check so they dont accelerate any more if it is over the max speed but still allow for them surpass it when. like if they get shot away from parents when born
+**
 ** Put in some millis() to track how long functions take to run
 ** Look into anonymous functions and make them not anonymous
 **
 ** Move menu outside of the actual game screen so input boxes will be easier to use. Look at some Daniel Shiffman videos
 ** DROP DOWN MENU - fill out the menu with more options:
-**			clear Food
 **			place mode: Mob[x] Food[ ]
-**			click mode: delete[ ] place[x]
+**			click mode: delete[ ] place[x] select[ ]
 **			growthRate
 **			foodRate
 **			change food spawning area (Awidth, Aheight)
@@ -70,7 +73,7 @@ var entities = []
 var foods = []
 var colors = []
 var pressed = 0
-var menuPressed = false
+var menuOpen = false
 
 var sectorDimensions = []
 var sectorSize = 2000
@@ -90,8 +93,6 @@ function setup() {
 			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j, j + sectorSize, i, i + sectorSize])
 		}
 	}
-	menu = new Menu(30, 90)
-
 	
 	for(var i = 0; i < 100; i++){		
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "circle"))
@@ -99,10 +100,31 @@ function setup() {
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
 		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
 	}
+	
 	for(var i = 0; i < 50; i++){
 		foods.push(new Food(ceil(random(30, aWidth)), ceil(random(30, aHeight))))
 	}
+	
 	ungroup()
+	menu = new Menu(15, 80)
+	
+	//Ungroup
+	ungroupButton = createButton('Ungroup')
+	ungroupButton.size(100,20)
+	ungroupButton.position(menuButton.x + 20, menuButton.y + 40)
+	ungroupButton.mousePressed(ungroupPressed)
+	//Clear mobs
+	clearMobsButton = createButton('Clear Mobs')
+	clearMobsButton.size(100,20)
+	clearMobsButton.position(menuButton.x + 20, menuButton.y + 40 + 30*1)
+	clearMobsButton.mousePressed(clearMobPressed)
+	//Clear food
+	clearFoodButton = createButton('Clear Food')
+	clearFoodButton.size(100,20)
+	clearFoodButton.position(menuButton.x + 20, menuButton.y + 40 + 30*2)
+	clearFoodButton.mousePressed(clearFoodPressed)
+
+	buttons = [ungroupButton, clearMobsButton, clearFoodButton]
 }
 
 function draw() {
@@ -297,11 +319,9 @@ function draw() {
 		push()
 		scale(1)
 		trans = [0, 0]
-		// Drawing the menu button and all the menu details
+		// Drawing the menu
+		
 		menu.display()
-		if(menuPressed == true){
-			menu.displayBox()
-		}else{}
 		for(var i = 0; i < topColors.length; i++){
 			fill(topColors[i][0], topColors[i][1], topColors[i][2])
 			ellipse(200 + 50 * i, 50, 15)
@@ -394,52 +414,57 @@ function mutate(gene, range){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function windowResized() {
-	resizeCanvas(windowWidth, windowHeight)
+function menuPressed(){
+	entities.splice(entities.length, 1)
+	if (menuOpen == false){
+			menuOpen = true
+		}else{
+			menuOpen = false
+		}
+		print("Menu opened", menuOpen)
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
+function ungroupPressed(){
+	entities.splice(entities.length - 1, 1)
+	ungroup()
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function clearMobPressed(){
+	entities.splice(entities.length - 1, 1)
+	entities = []
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function clearFoodPressed(){
+	entities.splice(entities.length - 1, 1)
+	foods = []
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function windowResized() {
+	resizeCanvas(windowWidth, windowHeight)
+}
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
 function mousePressed() {
-	if(dist(mouseX, mouseY, menu.x, menu.y) < menu.size/2){
-		if (menuPressed == false){
-			menuPressed = true
-		}else{
-			menuPressed = false
-		}
-		print("Menu clicked", menuPressed)
-	// First item in menu
-	}else if(menuPressed &&
-			mouseX > menu.x - menu.size/2 && 
-			mouseX < menu.x - menu.size/2 + menu.width &&
-			mouseY > menu.y + menu.size/1.5 && 
-			mouseY < menu.y + menu.size/1.5 + 30){
-		print("Item 1")
-		ungroup()
-	// Second item in menu
-	}else if(menuPressed &&
-			mouseX > menu.x - menu.size/2 && 
-			mouseX < menu.x - menu.size/2 + menu.width &&
-			mouseY > menu.y + menu.size/1.5 && 
-			mouseY < menu.y + menu.size/1.5 + 60){
-		print("Item 2")
-		entities = []
-	// Third item in menu
-	}else if(menuPressed &&
-			mouseX > menu.x - menu.size/2 && 
-			mouseX < menu.x - menu.size/2 + menu.width &&
-			mouseY > menu.y + menu.size/1.5 && 
-			mouseY < menu.y + menu.size/1.5 + 90){
-		print("Item 3")
-		if(mouseX > menu.x + 70 &&
-		   mouseX < menu.x + 120 &&
-		   mouseY > menu.y + menu.size + 55 &&
-		   mouseY < menu.y + menu.size + 75){
-			print("Wait for input for how many circles should be made")
-		}
+	//Dimensions of menu button
+	if(mouseX < 65 && mouseX > 15 &&
+	   mouseY < 100 && mouseY > 80){
+		//Menu already opens automatically so just prevent mob creation
+	}else if(menuOpen &&
+			mouseX > menu.x && 
+			mouseX < menu.x + menu.width &&
+			mouseY > menu.y && 
+			mouseY < menu.y + menu.height){
+		
 	}else{
 		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
-		//entities.push(new Mob(100, 400, 15, mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
 	}
 }
 
