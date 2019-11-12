@@ -5,44 +5,49 @@
 ** Pause doesnt allow for scrolling/zooming
 ** Different shapes attract to each other
 ** 
-*/
+**
 
 /*
 ** TO DO
 **
+** Click on a mob and highlight it. Display mob stats maybe genes while highlighted. Show highlight over all other shapes but not text
+**Follow highlighted mob. change trans so that it is always in the center of the screen
+**
+** Add color to closest colors[] not whichever one is first and similar
 ** Add option to group by species(color)
+** Shaders
 **
 ** Fix maxspeed check so they dont accelerate any more if it is over the max speed but still allow for them surpass it when. like if they get shot away from parents when born
 **
 ** Put in some millis() to track how long functions take to run
 ** Look into anonymous functions and make them not anonymous
 **
-** Move menu outside of the actual game screen so input boxes will be easier to use. Look at some Daniel Shiffman videos
+**
 ** DROP DOWN MENU - fill out the menu with more options:
-**			place mode: Mob[x] Food[ ]
 **			click mode: delete[ ] place[x] select[ ]
-**			growthRate
-**			foodRate
-**			change food spawning area (Awidth, Aheight)
-**			Random Color[ ]		custom color[x]
+**			place mode: Mob[x] Food[ ]
+**			mob color:  Random[ ] custom[x]
 **					R:[   ] G:[   ] B:[   ]
+**			growthRate [ ]
+**			foodRate [ ]
+**			create [  ] mobs
+**			create [  ] foods
+**			change food spawning area (Awidth, Aheight)
 **
 ** Adjust the times that mobs are able to split rather than breed
 **
 ** "collision"(hitboxes) for multiple shapes when eating food
 ** Zooming in on mouse cursor not 0, 0
-** Collision between mobs
-**
 **
 ** 		GENES (each with a value 0-1000) 
 **		(weighted average of two genes when breeding) + random(-x, +x) 
 **		(1/16 chance to completely randomize)
 ** amount of life given to offspring
 ** required lifespan before breeding (At a certain lifespan look for a mate)
-** minSize, maxSize
+** 
 ** bordeness (how much time until the mob chooses a different target (food, mob))
 ** sight distance (sectors)
-** maybe remove the color requirements for breeding so any of them can breed with any others
+** 
 ** new form of movement (jumping)(add value to velocity)(slow down mob as time goes on)
 **
 **
@@ -73,13 +78,12 @@ var entities = []
 var foods = []
 var colors = []
 var pressed = 0
-var menuOpen = false
+var menuOpen = true
+var placeColor = [0, 0, 0]
 
 var sectorDimensions = []
 var sectorSize = 2000
 var sectors = []
-
-
 
 function setup() {
 	createCanvas(windowWidth, windowHeight)
@@ -112,7 +116,7 @@ function setup() {
 	ungroupButton = createButton('Ungroup')
 	ungroupButton.size(100,20)
 	ungroupButton.position(menuButton.x + 20, menuButton.y + 40)
-	ungroupButton.mousePressed(ungroupPressed)
+	ungroupButton.mousePressed(ungroup)
 	//Clear mobs
 	clearMobsButton = createButton('Clear Mobs')
 	clearMobsButton.size(100,20)
@@ -123,11 +127,68 @@ function setup() {
 	clearFoodButton.size(100,20)
 	clearFoodButton.position(menuButton.x + 20, menuButton.y + 40 + 30*2)
 	clearFoodButton.mousePressed(clearFoodPressed)
-
-	buttons = [ungroupButton, clearMobsButton, clearFoodButton]
+/*			click mode: delete[ ] place[x] select[ ]
+**			place mode: Mob[x] Food[ ]
+**			mob color:  Random[ ] custom[x]
+**					R:[   ] G:[   ] B:[   ]*/
+	clickRadio = createRadio()
+	clickRadio.position(menuButton.x + 50, menuButton.y + 20 + 30*4)
+	clickRadio.option('Place')
+	clickRadio.option('Delete')
+	clickRadio.option('Select')
+	
+	placeRadio = createRadio()
+	placeRadio.position(menuButton.x + 80, menuButton.y + 30*6)
+	placeRadio.option('Mob')
+	placeRadio.option('Food')
+	
+	colorRadio = createRadio()
+	colorRadio.position(menuButton.x + 65, menuButton.y + 10 + 30*7)
+	colorRadio.option('Random')
+	colorRadio.option('Custom')
+	
+	colorInput = createInput('')
+	colorInput.position(menuButton.x + 105, menuButton.y - 2 + 30*8)
+	colorInput.attribute('placeholder', '255, 255, 255')
+	colorInput.size(90, 15)
+	
+	mobsInput = createInput('')
+	mobsInput.position(menuButton.x + 100, menuButton.y + 18 + 30*8)
+	mobsInput.attribute('placeholder', '0')
+	mobsInput.size(40, 15)
+	
+	mobsConfirm = createButton('Create')
+	mobsConfirm.position(menuButton.x + 185, menuButton.y + 16 + 30*8)
+	mobsConfirm.size(55, 18)
+	
+	foodInput = createInput('')
+	foodInput.position(menuButton.x + 100, menuButton.y + 18 + 30*9)
+	foodInput.attribute('placeholder', '0')
+	foodInput.size(40, 15)
+	
+	foodConfirm = createButton('Create')
+	foodConfirm.position(menuButton.x + 185, menuButton.y + 15 + 30*9)
+	foodConfirm.size(55, 18)
+	
+	buttons = [ungroupButton, clearMobsButton, clearFoodButton, clickRadio, placeRadio, colorRadio, mobsInput, mobsConfirm, foodInput, foodConfirm]
+	
+	clickRadio.value('Place')
+	placeRadio.value('Mob')
+	colorRadio.value('Random')
+	colorInput.value('255, 255, 255')
+	mobsInput.value('0')
+	foodInput.value('0')
 }
 
 function draw() {
+	if(colorRadio.value() == 'Random'){
+	   colorInput.hide()
+	}else{
+		colorInput.show()
+	}
+	if(entities[0]){
+		entities[0].highlighted = true
+	}
 	if(!paused){
 		push()
 		// Controls adjusting growth rate
@@ -265,7 +326,7 @@ function draw() {
 				// If it is not add the color to the list
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
-					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 5){
+					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 10){
 						colors[j][3] = colors[j][3] + 1
 						colorMatched = true
 						break
@@ -316,7 +377,10 @@ function draw() {
 		pop()
 		// push() to keep the menu button in the top right corner
 		tempTrans = [trans[0], trans[1]]
-		push()
+		strokeWeight(2)
+		stroke(0)
+		textSize(20)
+		textAlign(LEFT)
 		scale(1)
 		trans = [0, 0]
 		// Drawing the menu
@@ -325,19 +389,15 @@ function draw() {
 		for(var i = 0; i < topColors.length; i++){
 			fill(topColors[i][0], topColors[i][1], topColors[i][2])
 			ellipse(200 + 50 * i, 50, 15)
-			text(topColors[i][3], 200 + 50 * i, 38)
+			text(topColors[i][3], 195 + 50 * i, 38)
 		}
-		fill('black')
 		noStroke()
-		text(colors.length + " Unique Colors", 270, 78)
-		pop()
+		fill(0)
+		text(colors.length + " Unique Colors", 190, 78)
+		
 
 		trans = [tempTrans[0], tempTrans[1]]
 		//Time and Population
-		fill(0)
-		strokeWeight(0)
-		textSize(20)
-		textAlign(LEFT)
 		time = frameCount / fr
 		minutes = Math.floor(time / 60)
 		time = floor(time - minutes * 60)
@@ -403,11 +463,11 @@ function mutate(gene, range){
 	if(rand < .8){
 		//Subtracting .5 so the random number is from -.5 to +.5
 		gene = gene + (random() - .5)*10
-	}else if(rand < .96){
+	}else if(rand < .965){
 		gene = gene + (random() - .5)*20
 	}else{
 		gene = random(0,range)
-		print("Random Gene")
+		print("Random Gene " + "Time:  " + minutes + ":" + time)
 	}
 	return gene
 }
@@ -415,7 +475,6 @@ function mutate(gene, range){
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function menuPressed(){
-	entities.splice(entities.length, 1)
 	if (menuOpen == false){
 			menuOpen = true
 		}else{
@@ -426,22 +485,13 @@ function menuPressed(){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function ungroupPressed(){
-	entities.splice(entities.length - 1, 1)
-	ungroup()
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
 function clearMobPressed(){
-	entities.splice(entities.length - 1, 1)
 	entities = []
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function clearFoodPressed(){
-	entities.splice(entities.length - 1, 1)
 	foods = []
 }
 
@@ -462,9 +512,25 @@ function mousePressed() {
 			mouseX < menu.x + menu.width &&
 			mouseY > menu.y && 
 			mouseY < menu.y + menu.height){
-		
+		//Do not spawn a mob when a button is clicked
 	}else{
-		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+		if(clickRadio.value() == 'Place'){
+		   if(placeRadio.value() == 'Mob'){
+			   if(colorRadio.value() == 'Random'){
+				   entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+			   }else{
+				   placeColor = split(colorInput.value(), ',')
+				   entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+			   }
+		   }else{
+			   foods.push(new Food(mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1]))
+		   }
+		}else if(clickRadio.value() == 'Delete'){
+			print('delete')
+		}else{
+			print('delete')
+		}
+		
 	}
 }
 
