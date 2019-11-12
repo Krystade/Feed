@@ -13,6 +13,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.maxXSpeed = this.baseSpeed * 8
 	this.maxYSpeed = this.baseSpeed * 8
 	
+	this.highlighted = false
 	this.shape = shape
 	this.closestFood = {x:this.x, y:this.y}
 	this.sector = 0
@@ -44,11 +45,17 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.display = function(){
 		push()
 		//The mob itself
+		if(this.highlighted && this.shape == "circle"){
+			stroke(250, 50, 50)
+			strokeWeight(20)
+			noFill()
+			ellipse(this.x, this.y, this.size + 20)
+		}
 		stroke(0)
 		strokeWeight(1)
 		fill(this.color)
 		if (this.shape == "circle"){
-			ellipse(this.x, this.y, this.size, this.size)
+			ellipse(this.x, this.y, this.size)
 		}else if (this.shape == "square"){
 			rect(this.x, this.y, this.size, this.size)
 		}else if (this.shape == "triangle"){
@@ -160,7 +167,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		childLifespan = this.lifeSpan * .2 + other.lifeSpan * .2
 		this.lifeSpan *= .8
 		other.lifeSpan *= .8
-		entities.push(new Mob(round(average(this.r, other.r)), round(average(this.g, other.g)), round(average(this.b, other.b)), average(this.x, other.x), average(this.y, other.y), average(this.minSize, other.minSize), childLifespan, foods, this.size))
+		entities.push(new Mob(mutate(average(this.r, other.r), 255), mutate(average(this.g, other.g), 255), mutate(average(this.b, other.b), 255), average(this.x, other.x), average(this.y, other.y), average(this.minSize, 
+		other.minSize), childLifespan, foods, this.size))
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
