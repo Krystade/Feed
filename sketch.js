@@ -25,13 +25,6 @@
 **
 ** DROP DOWN MENU - fill out the menu with more options:
 **			click mode: delete[ ] place[x] select[ ]
-**			place mode: Mob[x] Food[ ]
-**			mob color:  Random[ ] custom[x]
-**					R:[   ] G:[   ] B:[   ]
-**			growthRate [ ]
-**			foodRate [ ]
-**			create [  ] mobs
-**			create [  ] foods
 **			change food spawning area (Awidth, Aheight)
 **
 ** Adjust the times that mobs are able to split rather than breed
@@ -54,7 +47,6 @@
 ** make an ai control each mob
 ** give them the ability to split whenever
 ** have a penalty for splitting, maybe only keep 80% of the lifespan or something
-** maybe have combined lifespan count as score or most circles on the screen for the longest time. a mix of both would be good. give a multiplier of something like 1.1 or something for each aditional entity of the same color
 */
 
 p5.disableFriendlyErrors = true
@@ -69,6 +61,7 @@ var trans = [0, 0]
 
 // How quickly entities grow
 var growthTimer = 0	
+var growthRate = 1
 // How quickly food spawns
 var foodRate = .25
 // Frame rate cap. number of frames per second
@@ -78,7 +71,7 @@ var entities = []
 var foods = []
 var colors = []
 var pressed = 0
-var menuOpen = true
+var menuOpen = false
 var placeColor = [0, 0, 0]
 
 var sectorDimensions = []
@@ -111,92 +104,14 @@ function setup() {
 	
 	ungroup()
 	menu = new Menu(15, 80)
-	
-	//Ungroup
-	ungroupButton = createButton('Ungroup')
-	ungroupButton.size(100,20)
-	ungroupButton.position(menuButton.x + 20, menuButton.y + 40)
-	ungroupButton.mousePressed(ungroup)
-	//Clear mobs
-	clearMobsButton = createButton('Clear Mobs')
-	clearMobsButton.size(100,20)
-	clearMobsButton.position(menuButton.x + 20, menuButton.y + 40 + 30*1)
-	clearMobsButton.mousePressed(clearMobPressed)
-	//Clear food
-	clearFoodButton = createButton('Clear Food')
-	clearFoodButton.size(100,20)
-	clearFoodButton.position(menuButton.x + 20, menuButton.y + 40 + 30*2)
-	clearFoodButton.mousePressed(clearFoodPressed)
-/*			click mode: delete[ ] place[x] select[ ]
-**			place mode: Mob[x] Food[ ]
-**			mob color:  Random[ ] custom[x]
-**					R:[   ] G:[   ] B:[   ]*/
-	clickRadio = createRadio()
-	clickRadio.position(menuButton.x + 50, menuButton.y + 20 + 30*4)
-	clickRadio.option('Place')
-	clickRadio.option('Delete')
-	clickRadio.option('Select')
-	
-	placeRadio = createRadio()
-	placeRadio.position(menuButton.x + 80, menuButton.y + 30*6)
-	placeRadio.option('Mob')
-	placeRadio.option('Food')
-	
-	colorRadio = createRadio()
-	colorRadio.position(menuButton.x + 65, menuButton.y + 10 + 30*7)
-	colorRadio.option('Random')
-	colorRadio.option('Custom')
-	
-	colorInput = createInput('')
-	colorInput.position(menuButton.x + 105, menuButton.y - 2 + 30*8)
-	colorInput.attribute('placeholder', '255, 255, 255')
-	colorInput.size(90, 15)
-	
-	mobsInput = createInput('')
-	mobsInput.position(menuButton.x + 100, menuButton.y + 18 + 30*8)
-	mobsInput.attribute('placeholder', '0')
-	mobsInput.size(40, 15)
-	
-	mobsConfirm = createButton('Create')
-	mobsConfirm.position(menuButton.x + 185, menuButton.y + 16 + 30*8)
-	mobsConfirm.size(55, 18)
-	
-	foodInput = createInput('')
-	foodInput.position(menuButton.x + 100, menuButton.y + 18 + 30*9)
-	foodInput.attribute('placeholder', '0')
-	foodInput.size(40, 15)
-	
-	foodConfirm = createButton('Create')
-	foodConfirm.position(menuButton.x + 185, menuButton.y + 15 + 30*9)
-	foodConfirm.size(55, 18)
-	
-	buttons = [ungroupButton, clearMobsButton, clearFoodButton, clickRadio, placeRadio, colorRadio, mobsInput, mobsConfirm, foodInput, foodConfirm]
-	
-	clickRadio.value('Place')
-	placeRadio.value('Mob')
-	colorRadio.value('Random')
-	colorInput.value('255, 255, 255')
-	mobsInput.value('0')
-	foodInput.value('0')
 }
 
 function draw() {
-	if(colorRadio.value() == 'Random'){
-	   colorInput.hide()
-	}else{
-		colorInput.show()
-	}
 	if(entities[0]){
 		entities[0].highlighted = true
 	}
 	if(!paused){
 		push()
-		// Controls adjusting growth rate
-		if (entities.length > 0){
-			growth = entities[0].growth
-		}else{
-			growth = 2
-		}
 		// Set the background color
 		background (210, 220, 235)
 		// Number to scale the canvas by
@@ -380,19 +295,20 @@ function draw() {
 		strokeWeight(2)
 		stroke(0)
 		textSize(20)
-		textAlign(LEFT)
 		scale(1)
 		trans = [0, 0]
 		// Drawing the menu
-		
 		menu.display()
+		textAlign(CENTER)
+		// Drawing the top colors and how many of each top color there is
 		for(var i = 0; i < topColors.length; i++){
 			fill(topColors[i][0], topColors[i][1], topColors[i][2])
 			ellipse(200 + 50 * i, 50, 15)
-			text(topColors[i][3], 195 + 50 * i, 38)
+			text(topColors[i][3], 200 + 50 * i, 38)
 		}
 		noStroke()
 		fill(0)
+		textAlign(LEFT)
 		text(colors.length + " Unique Colors", 190, 78)
 		
 
@@ -418,7 +334,7 @@ function draw() {
 		//Only have the Growth Rate displayed for a few seconds
 		if (growthTimer > 0){
 			growthTimer--
-			text ("Growth Rate: " + growth, windowWidth - 60, 100)
+			text ("Growth Rate: " + growthRate.toFixed(1), windowWidth - 60, 100)
 		}
 		textAlign(RIGHT)
 		fill(255)
@@ -480,7 +396,7 @@ function menuPressed(){
 		}else{
 			menuOpen = false
 		}
-		print("Menu opened", menuOpen)
+		//print("Menu opened", menuOpen)
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -493,6 +409,41 @@ function clearMobPressed(){
 
 function clearFoodPressed(){
 	foods = []
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function createMobs(){
+		for(var i = 0; i < mobsInput.value(); i++){
+		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
+	}
+	if(colorRadio.value() == 'Random'){
+		for(var i = 0; i < mobsInput.value(); i++){
+			entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), random(0, aWidth), random(0, aHeight), random(40, 80), 10, foods, "circle"))
+		}
+	}else{
+		for(var i = 0; i < mobsInput.value(); i++){
+			placeColor = split(colorInput.value(), ',')
+			entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+		}
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function createFood(){
+	for(var i = 0; i < foodInput.value(); i++){
+		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function changeGrowthRate(){
+	if(float(growthRateInput.value()) == float(growthRateInput.value())){
+		growthRate = float(growthRateInput.value())
+		growthTimer = 30
+	}
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -542,7 +493,7 @@ function keyPressed() {
 		if(paused){
 			paused = false
 		}else{
-			paused = true
+			//paused = true
 		}
 	}
 	//keyCode 85 is u
@@ -555,18 +506,14 @@ function keyPressed() {
 		}
 	//keycode 187 is = or +
 	if (keyCode == 187){
-		for(var i = 0; i < entities.length; i++){
-			//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
-			entities[i].growth = Math.round((entities[i].growth + .2) * 10) / 10
-		}
+		//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
+		growthRate += .1
 		growthTimer = 30
 	}
 	//keyCode 189 is - or _
 	if (keyCode == 189){
-		for(var i = 0; i < entities.length; i++){
-			//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
-			entities[i].growth = Math.round((entities[i].growth - .2) * 10) / 10
-		}
+		//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
+		growthRate -= .1
 		growthTimer = 30
 	}
 }
