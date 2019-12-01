@@ -1,54 +1,3 @@
-/*
-** TO FIX
-** 
-** BREEDING NOT WORKING
-** Pause doesnt allow for scrolling/zooming
-** Different shapes attract to each other
-** 
-**
-
-/*
-** TO DO
-**
-** Click on a mob and highlight it. Display mob stats maybe genes while highlighted. Show highlight over all other shapes but not text
-**Follow highlighted mob. change trans so that it is always in the center of the screen
-**
-** Add color to closest colors[] not whichever one is first and similar
-** Add option to group by species(color)
-** Shaders
-**
-** Fix maxspeed check so they dont accelerate any more if it is over the max speed but still allow for them surpass it when. like if they get shot away from parents when born
-**
-** Put in some millis() to track how long functions take to run
-** Look into anonymous functions and make them not anonymous
-**
-**
-** DROP DOWN MENU - fill out the menu with more options:
-**			click mode: delete[ ] place[x] select[ ]
-**			change food spawning area (Awidth, Aheight)
-**
-** Adjust the times that mobs are able to split rather than breed
-**
-** "collision"(hitboxes) for multiple shapes when eating food
-** Zooming in on mouse cursor not 0, 0
-**
-** 		GENES (each with a value 0-1000) 
-**		(weighted average of two genes when breeding) + random(-x, +x) 
-**		(1/16 chance to completely randomize)
-** amount of life given to offspring
-** required lifespan before breeding (At a certain lifespan look for a mate)
-** 
-** bordeness (how much time until the mob chooses a different target (food, mob))
-** sight distance (sectors)
-** 
-** new form of movement (jumping)(add value to velocity)(slow down mob as time goes on)
-**
-**
-** make an ai control each mob
-** give them the ability to split whenever
-** have a penalty for splitting, maybe only keep 80% of the lifespan or something
-*/
-
 p5.disableFriendlyErrors = true
 // Variable used to pause the game so checking values without anything moving will be easy
 var paused = false
@@ -77,6 +26,9 @@ var placeColor = [0, 0, 0]
 var sectorDimensions = []
 var sectorSize = 2000
 var sectors = []
+var mouseSector = [0, 0]
+var mouseXScale = 0
+var MouseYScale = 0
 
 function setup() {
 	createCanvas(windowWidth, windowHeight)
@@ -107,15 +59,15 @@ function setup() {
 }
 
 function draw() {
-	if(entities[0]){
-		entities[0].highlighted = true
-	}
+		// Number to scale the canvas by
+		scaleNum = Math.pow(10, zoom)
+		// The mouse position on the map not the screen
+		mouseXScale = mouseX * (1/scaleNum) - trans[0]
+		MouseYScale = mouseY * (1/scaleNum) - trans[1]
 	if(!paused){
 		push()
 		// Set the background color
 		background (210, 220, 235)
-		// Number to scale the canvas by
-		scaleNum = Math.pow(10, zoom)
 
 		// Scale and translate all entities to simulate zooming and moving
 		scale(scaleNum)
@@ -150,7 +102,7 @@ function draw() {
 		if (mouseIsPressed){
 			pressed++
 			if(pressed % 2 == 0 && pressed > 10){
-				entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+				entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
 			}
 		}else{
 			pressed = 0
@@ -194,8 +146,12 @@ function draw() {
 			if (entities[i]){
 				// Move the entity
 				entities[i].move()
+				entities[i].move()
+				entities[i].move()
 				// Filling the sectors array
+				//j is row
 				for(var j = 0; j < sectors.length; j++){
+					//k is column
 					for(var k = 0; k < sectors[j].length; k++){
 						if(entities[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
 						sectors[j][k].push(entities[i])
@@ -254,8 +210,14 @@ function draw() {
 			}
 		}
 		for(var i = 0; i < foods.length; i++){
+			//j is row
 			for(var j = 0; j < sectors.length; j++){
+				//k is column
 				for(var k = 0; k < sectors[j].length; k++){
+					//Find which sector the mouse is in and store it in the variable mouseSector
+					if(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][0] < mouseXScale && mouseXScale < sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][1] && sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][2] < MouseYScale && MouseYScale < sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][3]){
+						mouseSector = [k, j]
+					}
 					if(foods[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
 						sectors[k][j].push(foods[i])
 						break
@@ -345,7 +307,7 @@ function draw() {
 		text(str(round(frameRate())), windowWidth - 30, 25)
 		textSize(15)
 		// Display the x and y position of the mouse in the area
-		text(str(round(mouseX * (1/scaleNum) - trans[0])) + ", " + str(round(mouseY * (1/scaleNum) - trans[1])), mouseX, mouseY - 20)
+		text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 		// Display the x and y position of the mouse in the screen
 		text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
 		pop()
@@ -424,7 +386,7 @@ function createMobs(){
 	}else{
 		for(var i = 0; i < mobsInput.value(); i++){
 			placeColor = split(colorInput.value(), ',')
-			entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+			entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXs, mouseYs, random(40, 80), 10, foods, "circle"))
 		}
 	}
 }
@@ -468,20 +430,40 @@ function mousePressed() {
 		if(clickRadio.value() == 'Place'){
 		   if(placeRadio.value() == 'Mob'){
 			   if(colorRadio.value() == 'Random'){
-				   entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+				   entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
 			   }else{
 				   placeColor = split(colorInput.value(), ',')
-				   entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+				   entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
 			   }
 		   }else{
-			   foods.push(new Food(mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1]))
+			   foods.push(new Food(mouseXScale, MouseYScale))
 		   }
 		}else if(clickRadio.value() == 'Delete'){
-			print('delete')
-		}else{
-			print('delete')
+			for(var i = 0; i < entities.length; i++){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size){
+					print("Clicked on ", entities[i])
+					entities.splice(i,1)
+					i--;
+				}
+			}
+			
+			/*for(var i = 0; i < sectors[mouseSector[0]].length; i++){
+				for(var j = 0; j < sectors[mouseSector[1]].length; j++){
+					
+				}
+			}*/
+		}else if(clickRadio.value() == 'Select'){
+			for(var i = 0; i < entities.length; i++){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size){
+					entities[i].highlighted = true
+					highlighted.highlighted = false
+					print(highlighted)
+					var highlighted = entities[i]
+					print("Clicked on ", highlighted)
+					break;
+				}
+			}
 		}
-		
 	}
 }
 
