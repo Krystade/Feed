@@ -56,6 +56,7 @@ function setup() {
 	
 	ungroup()
 	menu = new Menu(15, 80)
+	var highlightedMob = "undefined"
 }
 
 function draw() {
@@ -146,8 +147,6 @@ function draw() {
 			if (entities[i]){
 				// Move the entity
 				entities[i].move()
-				entities[i].move()
-				entities[i].move()
 				// Filling the sectors array
 				//j is row
 				for(var j = 0; j < sectors.length; j++){
@@ -167,7 +166,8 @@ function draw() {
 				//entities[i].separate()
 				// Draw the entity to the canvas
 				entities[i].display()
-
+				
+				
 				for(var j = 0; j < foods.length; j++){
 				//Check if the mob exists and if it is within range of food
 					if(foods[j]){
@@ -250,6 +250,16 @@ function draw() {
 				}
 			}
 		}
+		
+		// Have the camera follow highlighted mob
+			if(typeof(highlightedMob) != "undefined" && highlightedMob != "undefined"){
+				if((windowWidth/2 * 1/scaleNum) - trans[0] != highlightedMob.x){
+					trans[0] = (windowWidth/2 * 1/scaleNum) - highlightedMob.x
+				}
+				if((windowHeight/2 * 1/scaleNum) - trans[1] != highlightedMob.y){
+					trans[1] = (windowHeight/2 * 1/scaleNum) - highlightedMob.y
+				}
+			}
 		// push() at start of draw so the text stays in view
 		pop()
 		// push() to keep the menu button in the top right corner
@@ -440,7 +450,7 @@ function mousePressed() {
 		   }
 		}else if(clickRadio.value() == 'Delete'){
 			for(var i = 0; i < entities.length; i++){
-				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
 					print("Clicked on ", entities[i])
 					entities.splice(i,1)
 					i--;
@@ -453,14 +463,25 @@ function mousePressed() {
 				}
 			}*/
 		}else if(clickRadio.value() == 'Select'){
-			for(var i = 0; i < entities.length; i++){
-				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size){
-					entities[i].highlighted = true
-					highlighted.highlighted = false
-					print(highlighted)
-					var highlighted = entities[i]
-					print("Clicked on ", highlighted)
-					break;
+			for(var i = entities.length - 1; i >= 0; i--){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
+					// Check if the clicked on mob is already highlighted
+					if(entities[i].highlighted == false){
+						//If it isnt already highlighted, highlight it
+						entities[i].highlighted = true
+						if(typeof(highlightedMob) != "undefined"){
+							highlightedMob.highlighted = false
+							highlightedMob = entities[i]
+						}else{
+							highlightedMob = entities[i]
+						}
+						print("Clicked on", highlightedMob)
+						break
+					// If the mob is already highlighted, unhighlight it
+					}else{
+						entities[i].highlighted = false
+						highlightedMob = "undefined"
+					}
 				}
 			}
 		}
