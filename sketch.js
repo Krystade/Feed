@@ -12,7 +12,7 @@ var trans = [0, 0]
 var growthTimer = 0	
 var growthRate = 1
 // How quickly food spawns
-var foodRate = .25
+var foodRate = .5
 // Frame rate cap. number of frames per second
 var fr = 30
 
@@ -56,7 +56,7 @@ function setup() {
 	
 	ungroup()
 	menu = new Menu(15, 80)
-	var highlightedMob = "undefined"
+	var highlightedMob = undefined
 }
 
 function draw() {
@@ -145,8 +145,17 @@ function draw() {
 			}
 			// Make sure the entity is valid
 			if (entities[i]){
-				// Move the entity
-				entities[i].move()
+				// Move, Display, Separate, increase breedNeed
+				entities[i].update()
+				
+				if(typeof(entities.target) != "undefined"){
+					if(entities[i].target.mob == false){
+						entities[i].findTarget()
+					}
+				}else{
+					entities[i].findTarget(entities, foods)
+				}
+				
 				// Filling the sectors array
 				//j is row
 				for(var j = 0; j < sectors.length; j++){
@@ -161,21 +170,25 @@ function draw() {
 						}
 					}
 				}
-
-				// If the entity can split have it split
-				//entities[i].separate()
-				// Draw the entity to the canvas
-				entities[i].display()
 				
+				// Have the camera follow highlighted mob
+				if(typeof(highlightedMob) != "undefined"){
+					if((windowWidth/2 * 1/scaleNum) - trans[0] != highlightedMob.x){
+						trans[0] = (windowWidth/2 * 1/scaleNum) - highlightedMob.x
+					}
+					if((windowHeight/2 * 1/scaleNum) - trans[1] != highlightedMob.y){
+						trans[1] = (windowHeight/2 * 1/scaleNum) - highlightedMob.y
+					}
+				}
 				
 				for(var j = 0; j < foods.length; j++){
 				//Check if the mob exists and if it is within range of food
 					if(foods[j]){
 						if(entities[i].eats(foods[j])){
 							entities[i].lifeSpan += foods[j].value
-							if(entities[i].feedNeed > 300){
+							/*if(entities[i].feedNeed > 300){
 								entities[i].feedNeed -= foods[j].value * 10
-							}
+							}*/
 							//If it does remove the food and lengthen the mob's life
 							if(j == 0){
 								foods.shift()
@@ -187,9 +200,12 @@ function draw() {
 					}
 				}
 				//Keep track of breed ability as time goes on
-				if (entities[i].breedCoolDown > 0){
+				/*if (entities[i].breedCoolDown > 0){
 					entities[i].breedCoolDown -= 1
 				}else{
+					entities[i].canBreed = true
+				}*/
+				if(entities[i].breedNeed > entities[i].feedNeed){
 					entities[i].canBreed = true
 				}
 				// Checking if the entities color is already in the list
@@ -225,11 +241,6 @@ function draw() {
 				}
 			}
 		}
-		// Can't be in the first entities loop because the sector aray has not been filled yet
-		for(var i = 0; i < entities.length; i++){
-			// Find which food and which breedable entity is the closest
-				entities[i].search(entities, foods)
-		}
 		// Find which colors have the most circles
 		temp = []
 		topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
@@ -250,16 +261,6 @@ function draw() {
 				}
 			}
 		}
-		
-		// Have the camera follow highlighted mob
-			if(typeof(highlightedMob) != "undefined" && highlightedMob != "undefined"){
-				if((windowWidth/2 * 1/scaleNum) - trans[0] != highlightedMob.x){
-					trans[0] = (windowWidth/2 * 1/scaleNum) - highlightedMob.x
-				}
-				if((windowHeight/2 * 1/scaleNum) - trans[1] != highlightedMob.y){
-					trans[1] = (windowHeight/2 * 1/scaleNum) - highlightedMob.y
-				}
-			}
 		// push() at start of draw so the text stays in view
 		pop()
 		// push() to keep the menu button in the top right corner
@@ -448,6 +449,7 @@ function mousePressed() {
 		   }else{
 			   foods.push(new Food(mouseXScale, MouseYScale))
 		   }
+			
 		}else if(clickRadio.value() == 'Delete'){
 			for(var i = 0; i < entities.length; i++){
 				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
@@ -457,11 +459,6 @@ function mousePressed() {
 				}
 			}
 			
-			/*for(var i = 0; i < sectors[mouseSector[0]].length; i++){
-				for(var j = 0; j < sectors[mouseSector[1]].length; j++){
-					
-				}
-			}*/
 		}else if(clickRadio.value() == 'Select'){
 			for(var i = entities.length - 1; i >= 0; i--){
 				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
@@ -480,7 +477,7 @@ function mousePressed() {
 					// If the mob is already highlighted, unhighlight it
 					}else{
 						entities[i].highlighted = false
-						highlightedMob = "undefined"
+						highlightedMob = undefined
 					}
 				}
 			}
