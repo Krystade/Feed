@@ -57,6 +57,8 @@ function setup() {
 	ungroup()
 	menu = new Menu(15, 80)
 	var highlightedMob = undefined
+	
+	stats = new Stats(windowWidth - 260, 80, 240, 300)
 }
 
 function draw() {
@@ -186,9 +188,6 @@ function draw() {
 					if(foods[j]){
 						if(entities[i].eats(foods[j])){
 							entities[i].lifeSpan += foods[j].value
-							/*if(entities[i].feedNeed > 300){
-								entities[i].feedNeed -= foods[j].value * 10
-							}*/
 							//If it does remove the food and lengthen the mob's life
 							if(j == 0){
 								foods.shift()
@@ -213,8 +212,8 @@ function draw() {
 				// If it is not add the color to the list
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
-					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 10){
-						colors[j][3] = colors[j][3] + 1
+					if(compareRgb(entities[i].rgb, [colors[j][0], colors[j][1], colors[j][2]]) <= 10){
+						colors[j][3] += 1
 						colorMatched = true
 						break
 						print("color matched")
@@ -272,6 +271,7 @@ function draw() {
 		trans = [0, 0]
 		// Drawing the menu
 		menu.display()
+		stats.display()
 		textAlign(CENTER)
 		// Drawing the top colors and how many of each top color there is
 		for(var i = 0; i < topColors.length; i++){
@@ -287,14 +287,15 @@ function draw() {
 
 		trans = [tempTrans[0], tempTrans[1]]
 		//Time and Population
-		time = frameCount / fr
-		minutes = Math.floor(time / 60)
-		time = floor(time - minutes * 60)
-		if(time < 10){
-			text("Time:  " + minutes + ":0" + time, 20, 45)
-		}else{
-			text("Time:  " + minutes + ":" + time, 20, 45)
-		}
+		time = (frameCount) / fr
+		
+		hours = floor(time/60/60)
+		minutes = floor(time/60 - hours*60)
+		seconds = floor(time - minutes*60 - hours*60*60)
+		
+		
+		text("Time:  " + hours + ":" + nf(minutes, 2) + ":" + nf(seconds,2), 20, 45)
+		
 		text("Population: " + entities.length, 20, 65)
 		//Instructions
 		textAlign(CENTER)
@@ -349,16 +350,30 @@ function ungroup(){
 // Currently only used in changing mutating color, range will be from 0-255 for food but likely 0 - 1000 for other genes when implemented
 function mutate(gene, range){
 	rand = random()
+	min = range[0]
+	max = range[1]
 	if(rand < .8){
 		//Subtracting .5 so the random number is from -.5 to +.5
 		gene = gene + (random() - .5)*10
-	}else if(rand < .965){
+	}else if(rand < .98){
 		gene = gene + (random() - .5)*20
 	}else{
-		gene = random(0,range)
-		print("Random Gene " + "Time:  " + minutes + ":" + time)
+		gene = random(min, max)
+		print("Random Gene " + "Time:  " + hours + ":" + nf(minutes, 2) + ":" + nf(seconds,2))
+	}
+	if(gene > max){
+	   gene = max
+	}else if(gene < min){
+		gene = min
 	}
 	return gene
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+// Takes input of two rgb color arrays and returns the deltaE value of them
+function compareRgb(color1, color2){
+	return deltaE(rgb2lab(color1), rgb2lab(color2))
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -430,13 +445,24 @@ function mousePressed() {
 	//Dimensions of menu button
 	if(mouseX < 65 && mouseX > 15 &&
 	   mouseY < 100 && mouseY > 80){
-		//Menu already opens automatically so just prevent mob creation
+		// Prevent any spawning/deleting/selecting
+		
+	// Dimensions of menu options when opened
 	}else if(menuOpen &&
 			mouseX > menu.x && 
 			mouseX < menu.x + menu.width &&
-			mouseY > menu.y && 
-			mouseY < menu.y + menu.height){
-		//Do not spawn a mob when a button is clicked
+			mouseY > menu.y + menu.size[1] + 10 && 
+			mouseY < menu.y + menu.height + menu.size[1] + 10){
+			// Prevent any spawning/deleting/selecting
+		
+	// If a mob is highlighted and its stats are being displayed
+	// Don't create a mob when clicking on the stats box
+	}else if(stats.open && 
+			mouseX > stats.x && 
+			mouseX < stats.x + stats.w &&
+			mouseY > stats.y && 
+			mouseY < stats.y + stats.h){
+			 // Prevent any spawning/deleting/selecting
 	}else{
 		if(clickRadio.value() == 'Place'){
 		   if(placeRadio.value() == 'Mob'){
