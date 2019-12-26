@@ -5,6 +5,7 @@ function Menu (x, y) {
 	// For the menu itself
 	this.width = 140*2
 	this.height = 350
+	// For the buttons
 	this.size = [50,20]
 	
 	//Make all the buttons/DOM elements
