@@ -1,52 +1,3 @@
-/*
-** TO FIX
-** 
-** BREEDING NOT WORKING
-**
-** Different shapes attract to each other
-** 
-*/
-
-/*
-** TO DO
-**
-** Put in some millis() to track how long functions take to run
-** Look into anonymous functions and make them not anonymous
-**
-** DROP DOWN MENU - fill out the menu with more options:
-**			clear Food
-**			place mode: Mob[x] Food[ ]
-**			growthRate
-**			foodRate
-**			change food spawning area (Awidth, Aheight)
-**			Random Color[ ]		custom color[x]
-**					R:[   ] G:[   ] B:[   ]
-**
-** Adjust the times that mobs are able to split rather than breed
-**
-** "collision"(hitboxes) for multiple shapes when eating food
-** Zooming in on mouse cursor not 0, 0
-** Collision between mobs
-**
-**
-** 		GENES (each with a value 0-1000) 
-**		(weighted average of two genes when breeding) + random(-x, +x) 
-**		(1/16 chance to completely randomize)
-** amount of life given to offspring
-** required lifespan before breeding (At a certain lifespan look for a mate)
-** minSize, maxSize
-** bordeness (how much time until the mob chooses a different target (food, mob))
-** sight distance (sectors)
-** maybe remove the color requirements for breeding so any of them can breed with any others
-** new form of movement (jumping)(add value to velocity)(slow down mob as time goes on)
-**
-**
-** make an ai control each mob
-** give them the ability to split whenever
-** have a penalty for splitting, maybe only keep 80% of the lifespan or something
-** maybe have combined lifespan count as score or most circles on the screen for the longest time. a mix of both would be good. give a multiplier of something like 1.1 or something for each aditional entity of the same color
-*/
-
 p5.disableFriendlyErrors = true
 // Variable used to pause the game so checking values without anything moving will be easy
 var paused = false
@@ -59,6 +10,7 @@ var trans = [0, 0]
 
 // How quickly entities grow
 var growthTimer = 0	
+var growthRate = 1
 // How quickly food spawns
 var foodRate = .5
 // Frame rate cap. number of frames per second
@@ -68,28 +20,28 @@ var entities = []
 var foods = []
 var colors = []
 var pressed = 0
-var menuPressed = false
+var menuOpen = false
+var placeColor = [0, 0, 0]
 
 var sectorDimensions = []
 var sectorSize = 2000
 var sectors = []
-
-
+var mouseSector = [0, 0]
+var mouseXScale = 0
+var MouseYScale = 0
 
 function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
 	// Setting the area that food is allowed to spawn in
-	aWidth = sectorSize * 6
-	aHeight = sectorSize * 6
+	aWidth = sectorSize * 12
+	aHeight = sectorSize * 12
 	
 	for(var i = 0; i < aWidth; i += sectorSize){
 		for(var j = 0; j < aHeight; j += sectorSize){
 			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j, j + sectorSize, i, i + sectorSize])
 		}
 	}
-	menu = new Menu(30, 90)
-
 	
 	for(var i = 0; i < 100; i++){		
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "circle"))
@@ -97,58 +49,61 @@ function setup() {
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
 		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
 	}
+	
 	for(var i = 0; i < 50; i++){
 		foods.push(new Food(ceil(random(30, aWidth)), ceil(random(30, aHeight))))
 	}
+	
 	ungroup()
+	menu = new Menu(15, 80)
+	var highlightedMob = undefined
 }
 
 function draw() {
-	if(!paused){
-		push()
-		// Controls adjusting growth rate
-		if (entities.length > 0){
-			growth = entities[0].growth
-		}else{
-			growth = 2
-		}
-		// Set the background color
-		background (200)
 		// Number to scale the canvas by
 		scaleNum = Math.pow(10, zoom)
+		// The mouse position on the map not the screen
+		mouseXScale = mouseX * (1/scaleNum) - trans[0]
+		MouseYScale = mouseY * (1/scaleNum) - trans[1]
+	if(!paused){
+		push()
+		// Set the background color
+		background (210, 220, 235)
 
 		// Scale and translate all entities to simulate zooming and moving
 		scale(scaleNum)
 		translate(trans[0], trans[1])
 
 		for(var i = 0; i < sectorDimensions.length; i++){
-			fill(200)
-			stroke(170, 170, 170)
+			//Just want the outline of the sectors
+			noFill()
+			//Make the outline a light grey color
+			stroke(150)
 			rect(sectorDimensions[i][0], sectorDimensions[i][2], sectorSize, sectorSize, 5)
 		}
 
 		// Move all entities right simulating the view moving left
 		if (keyIsDown(LEFT_ARROW)){
-			trans[0] = trans[0] + 50
+			trans[0] += 125
 		}	
 		// Move view up
 		if (keyIsDown(UP_ARROW)){
-			trans[1] = trans[1] + 50
+			trans[1] += 125
 		}
 		// Move view right
 		if (keyIsDown(RIGHT_ARROW)){
-			trans[0] = trans[0] - 50
+			trans[0] -= 125
 		}
 		// Move view down
 		if (keyIsDown(DOWN_ARROW)){
-			trans[1] = trans[1] - 50
+			trans[1] -= 125
 		}
 
 		//Detect if the mouse is being held down to make a mob every 3 frames
 		if (mouseIsPressed){
 			pressed++
 			if(pressed % 2 == 0 && pressed > 10){
-				entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+				entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
 			}
 		}else{
 			pressed = 0
@@ -190,10 +145,21 @@ function draw() {
 			}
 			// Make sure the entity is valid
 			if (entities[i]){
-				// Move the entity
-				entities[i].move()
+				// Move, Display, Separate, increase breedNeed
+				entities[i].update()
+				
+				if(typeof(entities.target) != "undefined"){
+					if(entities[i].target.mob == false){
+						entities[i].findTarget()
+					}
+				}else{
+					entities[i].findTarget(entities, foods)
+				}
+				
 				// Filling the sectors array
+				//j is row
 				for(var j = 0; j < sectors.length; j++){
+					//k is column
 					for(var k = 0; k < sectors[j].length; k++){
 						if(entities[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
 						sectors[j][k].push(entities[i])
@@ -204,20 +170,25 @@ function draw() {
 						}
 					}
 				}
-
-				// If the entity can split have it split
-				//entities[i].separate()
-				// Draw the entity to the canvas
-				entities[i].display()
-
+				
+				// Have the camera follow highlighted mob
+				if(typeof(highlightedMob) != "undefined"){
+					if((windowWidth/2 * 1/scaleNum) - trans[0] != highlightedMob.x){
+						trans[0] = (windowWidth/2 * 1/scaleNum) - highlightedMob.x
+					}
+					if((windowHeight/2 * 1/scaleNum) - trans[1] != highlightedMob.y){
+						trans[1] = (windowHeight/2 * 1/scaleNum) - highlightedMob.y
+					}
+				}
+				
 				for(var j = 0; j < foods.length; j++){
 				//Check if the mob exists and if it is within range of food
 					if(foods[j]){
 						if(entities[i].eats(foods[j])){
 							entities[i].lifeSpan += foods[j].value
-							if(entities[i].feedNeed > 300){
+							/*if(entities[i].feedNeed > 300){
 								entities[i].feedNeed -= foods[j].value * 10
-							}
+							}*/
 							//If it does remove the food and lengthen the mob's life
 							if(j == 0){
 								foods.shift()
@@ -229,9 +200,12 @@ function draw() {
 					}
 				}
 				//Keep track of breed ability as time goes on
-				if (entities[i].breedCoolDown > 0){
+				/*if (entities[i].breedCoolDown > 0){
 					entities[i].breedCoolDown -= 1
 				}else{
+					entities[i].canBreed = true
+				}*/
+				if(entities[i].breedNeed > entities[i].feedNeed){
 					entities[i].canBreed = true
 				}
 				// Checking if the entities color is already in the list
@@ -239,7 +213,7 @@ function draw() {
 				// If it is not add the color to the list
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
-					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 2){
+					if(deltaE(rgb2lab([entities[i].r, entities[i].g, entities[i].b]), rgb2lab([colors[j][0], colors[j][1], colors[j][2]])) <= 10){
 						colors[j][3] = colors[j][3] + 1
 						colorMatched = true
 						break
@@ -252,19 +226,20 @@ function draw() {
 			}
 		}
 		for(var i = 0; i < foods.length; i++){
+			//j is row
 			for(var j = 0; j < sectors.length; j++){
+				//k is column
 				for(var k = 0; k < sectors[j].length; k++){
+					//Find which sector the mouse is in and store it in the variable mouseSector
+					if(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][0] < mouseXScale && mouseXScale < sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][1] && sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][2] < MouseYScale && MouseYScale < sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][3]){
+						mouseSector = [k, j]
+					}
 					if(foods[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
 						sectors[k][j].push(foods[i])
 						break
 					}
 				}
 			}
-		}
-		// Can't be in the first entities loop because the sector aray has not been filled yet
-		for(var i = 0; i < entities.length; i++){
-			// Find which food and which breedable entity is the closest
-				entities[i].search(entities, foods)
 		}
 		// Find which colors have the most circles
 		temp = []
@@ -290,30 +265,28 @@ function draw() {
 		pop()
 		// push() to keep the menu button in the top right corner
 		tempTrans = [trans[0], trans[1]]
-		push()
+		strokeWeight(2)
+		stroke(0)
+		textSize(20)
 		scale(1)
 		trans = [0, 0]
-		// Drawing the menu button and all the menu details
+		// Drawing the menu
 		menu.display()
-		if(menuPressed == true){
-			menu.displayBox()
-		}else{}
+		textAlign(CENTER)
+		// Drawing the top colors and how many of each top color there is
 		for(var i = 0; i < topColors.length; i++){
 			fill(topColors[i][0], topColors[i][1], topColors[i][2])
 			ellipse(200 + 50 * i, 50, 15)
 			text(topColors[i][3], 200 + 50 * i, 38)
 		}
-		fill('black')
 		noStroke()
-		text(colors.length + " Unique Colors", 270, 78)
-		pop()
+		fill(0)
+		textAlign(LEFT)
+		text(colors.length + " Unique Colors", 190, 78)
+		
 
 		trans = [tempTrans[0], tempTrans[1]]
 		//Time and Population
-		fill(0)
-		strokeWeight(0)
-		textSize(20)
-		textAlign(LEFT)
 		time = frameCount / fr
 		minutes = Math.floor(time / 60)
 		time = floor(time - minutes * 60)
@@ -334,7 +307,7 @@ function draw() {
 		//Only have the Growth Rate displayed for a few seconds
 		if (growthTimer > 0){
 			growthTimer--
-			text ("Growth Rate: " + growth, windowWidth - 60, 100)
+			text ("Growth Rate: " + growthRate.toFixed(1), windowWidth - 60, 100)
 		}
 		textAlign(RIGHT)
 		fill(255)
@@ -345,7 +318,7 @@ function draw() {
 		text(str(round(frameRate())), windowWidth - 30, 25)
 		textSize(15)
 		// Display the x and y position of the mouse in the area
-		text(str(round(mouseX * (1/scaleNum) - trans[0])) + ", " + str(round(mouseY * (1/scaleNum) - trans[1])), mouseX, mouseY - 20)
+		text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 		// Display the x and y position of the mouse in the screen
 		text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
 		pop()
@@ -373,52 +346,142 @@ function ungroup(){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function windowResized() {
-	resizeCanvas(windowWidth, windowHeight)
+// Currently only used in changing mutating color, range will be from 0-255 for food but likely 0 - 1000 for other genes when implemented
+function mutate(gene, range){
+	rand = random()
+	if(rand < .8){
+		//Subtracting .5 so the random number is from -.5 to +.5
+		gene = gene + (random() - .5)*10
+	}else if(rand < .965){
+		gene = gene + (random() - .5)*20
+	}else{
+		gene = random(0,range)
+		print("Random Gene " + "Time:  " + minutes + ":" + time)
+	}
+	return gene
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function mousePressed() {
-	if(dist(mouseX, mouseY, menu.x, menu.y) < menu.size/2){
-		if (menuPressed == false){
-			menuPressed = true
+function menuPressed(){
+	if (menuOpen == false){
+			menuOpen = true
 		}else{
-			menuPressed = false
+			menuOpen = false
 		}
-		print("Menu clicked", menuPressed)
-	// First item in menu
-	}else if(menuPressed &&
-			mouseX > menu.x - menu.size/2 && 
-			mouseX < menu.x - menu.size/2 + menu.width &&
-			mouseY > menu.y + menu.size/1.5 && 
-			mouseY < menu.y + menu.size/1.5 + 30){
-		print("Item 1")
-		ungroup()
-	// Second item in menu
-	}else if(menuPressed &&
-			mouseX > menu.x - menu.size/2 && 
-			mouseX < menu.x - menu.size/2 + menu.width &&
-			mouseY > menu.y + menu.size/1.5 && 
-			mouseY < menu.y + menu.size/1.5 + 60){
-		print("Item 2")
-		entities = []
-	// Third item in menu
-	}else if(menuPressed &&
-			mouseX > menu.x - menu.size/2 && 
-			mouseX < menu.x - menu.size/2 + menu.width &&
-			mouseY > menu.y + menu.size/1.5 && 
-			mouseY < menu.y + menu.size/1.5 + 90){
-		print("Item 3")
-		if(mouseX > menu.x + 70 &&
-		   mouseX < menu.x + 120 &&
-		   mouseY > menu.y + menu.size + 55 &&
-		   mouseY < menu.y + menu.size + 75){
-			print("Wait for input for how many circles should be made")
+		//print("Menu opened", menuOpen)
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function clearMobPressed(){
+	entities = []
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function clearFoodPressed(){
+	foods = []
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function createMobs(){
+		for(var i = 0; i < mobsInput.value(); i++){
+		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
+	}
+	if(colorRadio.value() == 'Random'){
+		for(var i = 0; i < mobsInput.value(); i++){
+			entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), random(0, aWidth), random(0, aHeight), random(40, 80), 10, foods, "circle"))
 		}
 	}else{
-		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
-		//entities.push(new Mob(100, 400, 15, mouseX * (1/scaleNum) - trans[0], mouseY * (1/scaleNum) - trans[1], random(40, 80), 10, foods, "circle"))
+		for(var i = 0; i < mobsInput.value(); i++){
+			placeColor = split(colorInput.value(), ',')
+			entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXs, mouseYs, random(40, 80), 10, foods, "circle"))
+		}
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function createFood(){
+	for(var i = 0; i < foodInput.value(); i++){
+		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function changeGrowthRate(){
+	if(float(growthRateInput.value()) == float(growthRateInput.value())){
+		growthRate = float(growthRateInput.value())
+		growthTimer = 30
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function windowResized() {
+	resizeCanvas(windowWidth, windowHeight)
+}
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function mousePressed() {
+	//Dimensions of menu button
+	if(mouseX < 65 && mouseX > 15 &&
+	   mouseY < 100 && mouseY > 80){
+		//Menu already opens automatically so just prevent mob creation
+	}else if(menuOpen &&
+			mouseX > menu.x && 
+			mouseX < menu.x + menu.width &&
+			mouseY > menu.y && 
+			mouseY < menu.y + menu.height){
+		//Do not spawn a mob when a button is clicked
+	}else{
+		if(clickRadio.value() == 'Place'){
+		   if(placeRadio.value() == 'Mob'){
+			   if(colorRadio.value() == 'Random'){
+				   entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
+			   }else{
+				   placeColor = split(colorInput.value(), ',')
+				   entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
+			   }
+		   }else{
+			   foods.push(new Food(mouseXScale, MouseYScale))
+		   }
+			
+		}else if(clickRadio.value() == 'Delete'){
+			for(var i = 0; i < entities.length; i++){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+					print("Clicked on ", entities[i])
+					entities.splice(i,1)
+					i--;
+				}
+			}
+			
+		}else if(clickRadio.value() == 'Select'){
+			for(var i = entities.length - 1; i >= 0; i--){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
+					// Check if the clicked on mob is already highlighted
+					if(entities[i].highlighted == false){
+						//If it isnt already highlighted, highlight it
+						entities[i].highlighted = true
+						if(typeof(highlightedMob) != "undefined"){
+							highlightedMob.highlighted = false
+							highlightedMob = entities[i]
+						}else{
+							highlightedMob = entities[i]
+						}
+						print("Clicked on", highlightedMob)
+						break
+					// If the mob is already highlighted, unhighlight it
+					}else{
+						entities[i].highlighted = false
+						highlightedMob = undefined
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -430,7 +493,7 @@ function keyPressed() {
 		if(paused){
 			paused = false
 		}else{
-			paused = true
+			//paused = true
 		}
 	}
 	//keyCode 85 is u
@@ -443,18 +506,14 @@ function keyPressed() {
 		}
 	//keycode 187 is = or +
 	if (keyCode == 187){
-		for(var i = 0; i < entities.length; i++){
-			//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
-			entities[i].growth = Math.round((entities[i].growth + .2) * 10) / 10
-		}
+		//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
+		growthRate += .1
 		growthTimer = 30
 	}
 	//keyCode 189 is - or _
 	if (keyCode == 189){
-		for(var i = 0; i < entities.length; i++){
-			//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
-			entities[i].growth = Math.round((entities[i].growth - .2) * 10) / 10
-		}
+		//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
+		growthRate -= .1
 		growthTimer = 30
 	}
 }

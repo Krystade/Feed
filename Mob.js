@@ -13,8 +13,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.maxXSpeed = this.baseSpeed * 8
 	this.maxYSpeed = this.baseSpeed * 8
 	
+	this.highlighted = false
 	this.shape = shape
-	this.closestFood = {x:this.x, y:this.y}
 	this.sector = 0
 	this.sectorsAdj = []
 	
@@ -22,16 +22,18 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.frames = ceil(random(0, 10))
 	this.lifeSpan = lifeSpan
 	//How quickly they grow
-	this.growth = 2
+	this.growth = 2 * growthRate
 	
 	//How long it has been since the mob has fed
-	this.feedNeed = 400
+	this.feedNeed = random(800, 2000)
 	//Breeding
 	//How long since the mob has bred
 	this.breedNeed = 0
 	this.canBreed = false
-	//cooldown is 30 seconds
-	this.breedCoolDown = fr * 30 //30 seconds because of 30 fps
+	// Cooldown is 30 seconds
+	//this.breedCoolDown = fr * 30
+	
+	this.target = undefined
 	
 	//Color
 	this.r = round(r)
@@ -40,15 +42,33 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.color = color(r, g, b, 0)
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-		
+	
+	this.update = function(){
+		this.move()
+		this.display()
+		//this.separate()
+		this.breedNeed += 2
+		// If the mob is targetting another mob and is close enough, breed
+		if(typeof(this.target) != "undefined" && this.target.mob && dist(this.x, this.y, this.target.x, this.target.y) < (this.size/2 + this.target.size/2)){
+			this.breed(this.target)
+		}
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
 	this.display = function(){
 		push()
 		//The mob itself
+		if(this.highlighted && this.shape == "circle"){
+			stroke(250, 50, 50)
+			strokeWeight(20)
+			noFill()
+			ellipse(this.x, this.y, this.size + 20)
+		}
 		stroke(0)
 		strokeWeight(1)
 		fill(this.color)
 		if (this.shape == "circle"){
-			ellipse(this.x, this.y, this.size, this.size)
+			ellipse(this.x, this.y, this.size)
 		}else if (this.shape == "square"){
 			rect(this.x, this.y, this.size, this.size)
 		}else if (this.shape == "triangle"){
@@ -78,25 +98,12 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		}
 		//Opacity directly correlates to lifeSpan, 0 is clear 255 is solid
 		this.color = color(r, g, b, this.lifeSpan * 5)
-		//line(this.x, this.y, this.closestFood.x, this.closestFood.y)
 		pop()
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.move = function(){
-		this.feedNeed += 2
-		this.breedNeed += 1
-		if(this.feedNeed < 0){
-			this.feedNeed = 0
-		}else if(this.feedNeed > 5000){
-			this.feedNeed = 5000
-		}
-		if(this.breedNeed < 0){
-			this.breedNeed = 0
-		}else if(this.breedNeed > 5000){
-			this.breedNeed = 5000
-		}
 		this.x += this.xSpeed
 		this.y += this.ySpeed
 		//lifeSpan decreases every 30 frames (1 sec)
@@ -115,52 +122,108 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		if (this.ySpeed >= this.maxYSpeed || this.ySpeed <= -this.maxYSpeed){
 			this.ySpeed = this.ySpeed/abs(this.ySpeed) * this.maxYSpeed
 		}
-		if(this.breedNeed <= this.feedNeed || this == this.closestMate){
-			//Move towards nearest food
-			//Steering towards closest food in the X direction
-			if(this.x + this.size / 2 > this.closestFood.x - this.closestFood.size / 2 || this.x - this.size / 2 < this.closestFood.x + this.closestFood.size / 2){
-				this.xSpeed += -3 * ((1/(this.x - this.closestFood.x + .001)) * abs(this.x - this.closestFood.x))
-			}else{
-				this.xSpeed += -3 * ((1/(this.x - this.closestFood.x + .001)) * abs(this.x - this.closestFood.x))
-			}
-			//Steering towards closest food in the Y direction
-			if(this.y  + this.size / 2 > this.closestFood.y - this.closestFood.size / 2 || this.y - this.size / 2  < this.closestFood.y + this.closestFood.size / 2){
-				this.ySpeed += -3 * ((1/(this.y - this.closestFood.y + .001)) * abs(this.y - this.closestFood.y))
-			}else{
-				this.ySpeed += -3 * ((1/(this.y - this.closestFood.y + .001)) * abs(this.y - this.closestFood.y))
-			}
-		}else if(this.breedNeed > this.feedNeed && this.closestMate != this){
-			if(dist(this.x, this.y, this.closestMate.x, this.closestMate.y) < (this.size/2 + this.closestMate.size/2) && this != this.closestMate){
-				this.breed(this.closestMate)
-			}
-			//Move towards nearest mate
-			//Steering towards closest mate in the X direction
-			if(this.x + this.size / 2 > this.closestMate.x - this.closestMate.size / 2 || this.x - this.size / 2 < this.closestMate.x + this.closestMate.size / 2){
-				this.xSpeed += -3 * ((1/(this.x - this.closestMate.x + .001)) * abs(this.x - this.closestMate.x))
-			}else{
-				this.xSpeed += -3 * ((1/(this.x - this.closestMate.x + .001)) * abs(this.x - this.closestMate.x))
-			}
-			//Steering towards closest mate in the Y direction
-			if(this.y  + this.size / 2 > this.closestMate.y - this.closestMate.size / 2 || this.y - this.size / 2  < this.closestMate.y + this.closestMate.size / 2){
-				this.ySpeed += -3 * ((1/(this.y - this.closestMate.y + .001)) * abs(this.y - this.closestMate.y))
-			}else{
-				this.ySpeed += -3 * ((1/(this.y - this.closestMate.y + .001)) * abs(this.y - this.closestMate.y))
-			}
-			
-		}else{
-			print("huh")
-		}
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
+	this.findTarget = function(entityList){
+		if(this.breedNeed > this.feedNeed){
+			if(this.findValidMates(entities).length > 0){
+				this.target = this.findMate(this.findValidMates(entities))
+				//print("\n", this, "Targeting", this.target)
+			}else{
+				//this.breedNeed = 0
+				this.target = this.findFood(foods)
+			}
+		}else{
+			this.target = this.findFood(foods)
+		}
+		
+		if(typeof(this.target) == "undefined"){
+			return undefined
+		}else{
+			// Steering in the X direction
+			if(this.x + this.size / 2 > this.target.x - this.target.size / 2 || this.x - this.size / 2 < this.target.x + this.target.size / 2){
+				this.xSpeed += -3 * ((1/(this.x - this.target.x + .001)) * abs(this.x - this.target.x))
+			}else{
+				this.xSpeed += -3 * ((1/(this.x - this.target.x + .001)) * abs(this.x - this.target.x))
+			}
+			// Steering in the Y direction
+			if(this.y  + this.size / 2 > this.target.y - this.target.size / 2 || this.y - this.size / 2  < this.target.y + this.target.size / 2){
+				this.ySpeed += -3 * ((1/(this.y - this.target.y + .001)) * abs(this.y - this.target.y))
+			}else{
+				this.ySpeed += -3 * ((1/(this.y - this.target.y + .001)) * abs(this.y - this.target.y))
+			}
+		}
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	// Returns an array of mobs that can be bred with
+	this.findValidMates = function(){
+		var matched = []
+		// Loop through all mobs on the map
+		for(var i = 0; i < entities.length; i++){
+			// Check if the mobs being compared are not the same mob and can breed before comparing colors
+			if(entities[i] != this && this.canBreed && entities[i].canBreed){
+				// Check if mob is close enough of an rgb value
+				if(deltaE(rgb2lab([this.r, this.g, this.b]), rgb2lab([entities[i].r, entities[i].g, entities[i].b])) < 20){
+					matched.push(entities[i])
+				}
+			}
+		}
+		// Return array of all valid mates on map
+		//print("matched: ", matched)
+		return matched
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	this.findMate = function(entityList){
+		if(!entityList[0]){
+			// No valid mates
+			print("no valid mates for", this)
+			return undefined
+		}else{
+			var closest = entityList[0]
+			// Compare all the breedable mobs and find the closest one
+			for(var i = 1; i < entityList.length; i++){
+				if(dist(this.x, this.y, entityList[i].x, entityList[i].y) < dist(this.x, this.y, closest.x, closest.y)){
+					closest = entityList[i]
+				}
+			}
+			// Return closest valid mate
+			return (closest)
+		}
+		// vv I don't think this ones necessary vv
+		// No valid mates
+		print("no valid mates for", this)
+		return undefined
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+		this.findFood = function(foodList){
+		if(typeof(foods[0]) == "undefined"){
+			return undefined
+		}else{
+			var closest = foods[0]
+			for(var i = 0; i < foods.length; i++){
+				if(dist(this.x, this.y, foods[i].x, foods[i].y) < dist(this.x, this.y, closest.x, closest.y)){
+					closest = foods[i]
+				}
+			}
+			//Return closest food
+		return(closest)
+		}
+	}
+	
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.breed = function(other){
 		this.breedNeed = 0
 		other.breedNeed = 0
 		childLifespan = this.lifeSpan * .2 + other.lifeSpan * .2
 		this.lifeSpan *= .8
 		other.lifeSpan *= .8
-		entities.push(new Mob(round(average(this.r, other.r)), round(average(this.g, other.g)), round(average(this.b, other.b)), average(this.x, other.x), average(this.y, other.y), average(this.minSize, other.minSize), childLifespan, foods, this.size))
+		entities.push(new Mob(mutate(average(this.r, other.r), 255), mutate(average(this.g, other.g), 255), mutate(average(this.b, other.b), 255), average(this.x, other.x), average(this.y, other.y), average(this.minSize, 
+		other.minSize), childLifespan, foods, this.size))
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -183,22 +246,10 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			this.lifeSpan -= this.minSize/this.size * this.lifeSpan
 		}
 
-	}
-	
+	}	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.search = function(entities, foods){
-		if(foods.length != 0 && foods[0]){
-			this.closestFood = {x:foods[0].x, y:foods[0].y}
-		}else{
-			//If there isnt any food left dont move
-			this.closestFood = {x:this.x, y:this.y}
-		}
-		if(entities.length != 0 && entities[0]){
-		   this.closestMate = entities[0]
-		}else{
-		   this.closestMate = this
-		}
 		//There are 8 sectors adjacent to the entity plus the one it is in
 		//Looping through each sector adjacent to the entity
 		for(var i = -1; i < 2; i++){
