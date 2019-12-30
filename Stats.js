@@ -39,8 +39,8 @@ function Stats(x, y, w, h){
 			text("Feed Need: " + round(entities[mobIndex].feedNeed), this.x + 5, this.y + offset*7)
 			text("Breed Need: " +  round(entities[mobIndex].breedNeed), this.x + 5, this.y + offset*8)
 			text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + offset*9)
-			text("Stat: " , this.x + 5, this.y + offset*10)
-			text("Stat: " , this.x + 5, this.y + offset*11)
+			//text("Stat: " , this.x + 5, this.y + offset*10)
+			//text("Stat: " , this.x + 5, this.y + offset*11)
 			
 		
 			pop()
