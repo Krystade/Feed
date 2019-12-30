@@ -40,10 +40,19 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	
 	//Color
 	this.r = round(r)
+	if(!(this.r <= 0 || this.r > 0)){
+		this.r = 0
+	}
 	this.g = round(g)
+	if(!(this.g <= 0 || this.g > 0)){
+		this.g = 0
+	}
 	this.b = round(b)
-	this.rgb = [r,g,b]
-	this.color = color(r, g, b, 0)
+	if(!(this.b <= 0 || this.b > 0)){
+		this.b = 0
+	}
+	this.rgb = [this.r,this.g,this.b]
+	this.color = color(this.r,this.g,this.b, 0)
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
@@ -104,7 +113,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			this.size += this.growth
 		}
 		//Opacity directly correlates to lifeSpan, 0 is clear 255 is solid
-		this.color = color(r, g, b, this.lifeSpan * 5)
+		this.color = color(this.r, this.g, this.b, this.lifeSpan * 5)
 		pop()
 	}
 	
