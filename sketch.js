@@ -30,6 +30,8 @@ var mouseSector = [0, 0]
 var mouseXScale = 0
 var MouseYScale = 0
 
+var highlightedMob
+
 function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
@@ -59,6 +61,7 @@ function setup() {
 	var highlightedMob = undefined
 	
 	stats = new Stats(windowWidth - 260, 80, 240, 300)
+	print(displayAvgStats())
 }
 
 function draw() {
@@ -104,8 +107,39 @@ function draw() {
 		//Detect if the mouse is being held down to make a mob every 3 frames
 		if (mouseIsPressed){
 			pressed++
-			if(pressed % 2 == 0 && pressed > 10){
-				entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
+			if(pressed % 2 == 0 && pressed > 10 ){
+				if(clickRadio.value() == 'Place'){
+					entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
+				}else if(clickRadio.value() == 'Delete'){
+					for(var i = 0; i < entities.length; i++){
+						if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+							entities.splice(i,1)
+							i--;
+						}
+					}
+				}else if(clickRadio.value() == 'Select'){
+								for(var i = entities.length - 1; i >= 0; i--){
+				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
+					// Check if the clicked on mob is already highlighted
+					if(entities[i].highlighted == false){
+						//If it isnt already highlighted, highlight it
+						entities[i].highlighted = true
+						if(typeof(highlightedMob) != "undefined"){
+							highlightedMob.highlighted = false
+							highlightedMob = entities[i]
+						}else{
+							highlightedMob = entities[i]
+						}
+						print("Clicked on", highlightedMob)
+						break
+					// If the mob is already highlighted, unhighlight it
+					}else{
+						entities[i].highlighted = false
+						highlightedMob = undefined
+					}
+				}
+			}
+				}
 			}
 		}else{
 			pressed = 0
@@ -116,7 +150,7 @@ function draw() {
 			foods.push(new Food(random(30, aWidth), random(30, aHeight)))
 		}else if (foodRate >= 1){
 			for (var i = 0; i < foodRate; i++){
-				foods.push(new food(random(30, aWidth), random(30, aHeight)))
+				foods.push(new Food(random(30, aWidth), random(30, aHeight)))
 			}
 		}else{
 		//Don't spawn food if food rate is negative
@@ -286,20 +320,14 @@ function draw() {
 		
 
 		trans = [tempTrans[0], tempTrans[1]]
-		//Time and Population
-		time = (frameCount) / fr
+		//Population
 		
-		hours = floor(time/60/60)
-		minutes = floor(time/60 - hours*60)
-		seconds = floor(time - minutes*60 - hours*60*60)
-		
-		
-		text("Time:  " + hours + ":" + nf(minutes, 2) + ":" + nf(seconds,2), 20, 45)
+		text("Time: " + getTime(), 20, 45)
 		
 		text("Population: " + entities.length, 20, 65)
 		//Instructions
 		textAlign(CENTER)
-		text("Click to create 1 circle, hold for many", windowWidth / 2, 25)
+		text("Hold mouse button for rapid click", windowWidth / 2, 25)
 		//Growth Rate
 		fill(35, 224, 67)
 		strokeWeight(1.5)
@@ -318,10 +346,12 @@ function draw() {
 		// Display the current framerate
 		text(str(round(frameRate())), windowWidth - 30, 25)
 		textSize(15)
+		
+/* Debugging */
 		// Display the x and y position of the mouse in the area
-		text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
+		//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 		// Display the x and y position of the mouse in the screen
-		text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+		//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
 		pop()
 	}
 }
@@ -352,20 +382,24 @@ function mutate(gene, range){
 	rand = random()
 	min = range[0]
 	max = range[1]
-	if(rand < .8){
+	if(rand < .5){
+		// Don't mutate 
+	}else if(rand < .8){
 		//Subtracting .5 so the random number is from -.5 to +.5
-		gene = gene + (random() - .5)*10
-	}else if(rand < .98){
-		gene = gene + (random() - .5)*20
+		// 10% max increase or decrease
+		gene = gene + (random() - .5)*gene/5
+	}else if(rand < .99){
+		// 20% max increase or decrease
+		gene = gene + (random() - .5)*gene/2.5
 	}else{
 		gene = random(min, max)
-		print("Random Gene " + "Time:  " + hours + ":" + nf(minutes, 2) + ":" + nf(seconds,2))
-	}
+		//print("Random Gene " + getTime())
+	}/*
 	if(gene > max){
 	   gene = max
 	}else if(gene < min){
 		gene = min
-	}
+	}*/
 	return gene
 }
 
@@ -376,6 +410,47 @@ function compareRgb(color1, color2){
 	return deltaE(rgb2lab(color1), rgb2lab(color2))
 }
 
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function displayAvgStats(){
+	sumMaxSize = 0
+	sumMinSize = 0
+	sumMaxSpeed = 0
+	sumFeedNeed = 0
+	sumGeneration = 0
+	minGeneration = 999999
+	maxGeneration = -1
+	for(var i = 0; i < entities.length; i++){
+		sumMaxSize += entities[i].maxSize
+		sumMinSize += entities[i].minSize
+		sumMaxSpeed += entities[i].maxXSpeed
+		sumFeedNeed += entities[i].feedNeed
+		sumGeneration += entities[i].generation
+		if(entities[i].generation > maxGeneration){
+			maxGeneration = entities[i].generation
+		}else if(entities[i].generation < minGeneration){
+			minGeneration = entities[i].generation
+		}else{}
+		
+	}
+	avgMaxSize = sumMaxSize/entities.length
+	avgMinSize = sumMinSize/entities.length
+	avgMaxSpeed = sumMaxSpeed/entities.length
+	avgFeedNeed = sumFeedNeed/entities.length
+	avgGeneration = sumGeneration/entities.length
+	
+	/*print*/return("\nAverage Max Size: " + avgMaxSize + "\nAverage Min Size: " + avgMinSize + "\nAverage Max Speed: " + avgMaxSpeed + "\nAverage Feed Need: " + avgFeedNeed + "\nMin Generation: " + minGeneration + "\nMax Generation: " + maxGeneration + "\nAverage Generation: " + avgGeneration)
+}
+
+function getTime(){
+	time = (frameCount) / fr
+	hours = floor(time/60/60)
+	minutes = floor(time/60 - hours*60)
+	seconds = floor(time - minutes*60 - hours*60*60)
+	
+	return(hours + ":" + nf(minutes, 2) + ":" + nf(seconds,2))
+	
+}
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function menuPressed(){
@@ -397,6 +472,55 @@ function clearMobPressed(){
 
 function clearFoodPressed(){
 	foods = []
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightOldest(){
+	var oldest = entities[0]
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = oldest
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightHealthiest(){
+	var healthiest = entities[0]
+	for(var i = 1; i < entities.length; i++){
+		if(entities[i].lifeSpan > healthiest.lifeSpan){
+			healthiest = entities[i]
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = healthiest
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightNext(){
+	var index = 0
+	for(var i = 0; i < entities.length; i++){
+		if(entities[i] == highlightedMob){
+			if(i == entities.length - 1){
+				index = 0
+			   		
+			}else{
+				index = i+1
+			}
+			break
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entities[index]
+	highlightedMob.highlighted = true
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -436,8 +560,18 @@ function changeGrowthRate(){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
+function changeFoodRate(){
+	if(float(foodRateInput.value()) == float(foodRateInput.value())){
+		foodRate = float(foodRateInput.value())
+	}
+	print("foodRate changed to " + float(foodRateInput.value()))
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight)
+	stats = new Stats(windowWidth - 260, 80, 240, 300)
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
@@ -457,13 +591,13 @@ function mousePressed() {
 		
 	// If a mob is highlighted and its stats are being displayed
 	// Don't create a mob when clicking on the stats box
-	}else if(stats.open && 
+	}/*else if(stats.open && 
 			mouseX > stats.x && 
 			mouseX < stats.x + stats.w &&
 			mouseY > stats.y && 
 			mouseY < stats.y + stats.h){
 			 // Prevent any spawning/deleting/selecting
-	}else{
+	}*/else{
 		if(clickRadio.value() == 'Place'){
 		   if(placeRadio.value() == 'Mob'){
 			   if(colorRadio.value() == 'Random'){
