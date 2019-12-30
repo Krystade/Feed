@@ -4,7 +4,7 @@ function Food (x,y){
 	this.x = x
 	this.y = y
 	this.size = 50
-	this.value = 10
+	this.value = 5
 	this.color = color(20, 200, 40)
 	
 	this.display = function(){
