@@ -9,9 +9,10 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.minSize = size
 	this.xSpeed = .0001//random(-4, 3)
 	this.ySpeed = .0001//random(-4, 3)
-	this.baseSpeed = random(1, 5)
-	this.maxXSpeed = this.baseSpeed * 8
-	this.maxYSpeed = this.baseSpeed * 8
+	//this.baseSpeed = random(1, 5)
+	this.baseSpeed = (300/this.minSize) + 18 + random(0,3)
+	this.maxXSpeed = this.baseSpeed
+	this.maxYSpeed = this.baseSpeed
 	
 	this.highlighted = false
 	this.shape = shape
@@ -30,6 +31,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	//How long since the mob has bred
 	this.breedNeed = 0
 	this.canBreed = false
+	// How many generations in the mob is
+	this.generation = 0
 	// Cooldown is 30 seconds
 	//this.breedCoolDown = fr * 30
 	
@@ -37,17 +40,30 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	
 	//Color
 	this.r = round(r)
+	if(!(this.r <= 0 || this.r > 0)){
+		this.r = 0
+	}
 	this.g = round(g)
+	if(!(this.g <= 0 || this.g > 0)){
+		this.g = 0
+	}
 	this.b = round(b)
-	this.color = color(r, g, b, 0)
+	if(!(this.b <= 0 || this.b > 0)){
+		this.b = 0
+	}
+	this.rgb = [this.r,this.g,this.b]
+	this.color = color(this.r,this.g,this.b, 0)
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.update = function(){
+		/*this.baseSpeed = (300/this.minSize) + 20
+		this.maxXSpeed = this.baseSpeed
+		this.maxYSpeed = this.baseSpeed*/
 		this.move()
 		this.display()
 		//this.separate()
-		this.breedNeed += 2
+		this.breedNeed++
 		// If the mob is targetting another mob and is close enough, breed
 		if(typeof(this.target) != "undefined" && this.target.mob && dist(this.x, this.y, this.target.x, this.target.y) < (this.size/2 + this.target.size/2)){
 			this.breed(this.target)
@@ -97,7 +113,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			this.size += this.growth
 		}
 		//Opacity directly correlates to lifeSpan, 0 is clear 255 is solid
-		this.color = color(r, g, b, this.lifeSpan * 5)
+		this.color = color(this.r, this.g, this.b, this.lifeSpan * 5)
 		pop()
 	}
 	
@@ -112,7 +128,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		if (this.frames >= 15){
 			this.frames = 0
 		}
-		
+
 		//Speed Managment
 		//If a mob moves faster than the max pixels a frame in the x direction, slow it down to the max
 		if(this.xSpeed >= this.maxXSpeed || this.xSpeed <= -this.maxXSpeed){
@@ -122,24 +138,10 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		if (this.ySpeed >= this.maxYSpeed || this.ySpeed <= -this.maxYSpeed){
 			this.ySpeed = this.ySpeed/abs(this.ySpeed) * this.maxYSpeed
 		}
-	}
-	
-	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-	
-	this.findTarget = function(entityList){
-		if(this.breedNeed > this.feedNeed){
-			if(this.findValidMates(entities).length > 0){
-				this.target = this.findMate(this.findValidMates(entities))
-				//print("\n", this, "Targeting", this.target)
-			}else{
-				//this.breedNeed = 0
-				this.target = this.findFood(foods)
-			}
-		}else{
-			this.target = this.findFood(foods)
-		}
-		
+		// Steer if there is a target or don't move
 		if(typeof(this.target) == "undefined"){
+			this.xSpeed = 0
+			this.ySpeed = 0
 			return undefined
 		}else{
 			// Steering in the X direction
@@ -156,6 +158,24 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 			}
 		}
 	}
+	
+	
+	
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	this.findTarget = function(entityList){
+		if(this.breedNeed > this.feedNeed && this.lifeSpan > 30){
+			if(this.findValidMates(entities).length > 0){
+				this.target = this.findMate(this.findValidMates(entities))
+				//print("\n", this, "Targeting", this.target)
+			}else{
+				//this.breedNeed = 0
+				this.target = this.findFood()
+			}
+		}else{
+			this.target = this.findFood()
+		}
+	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	// Returns an array of mobs that can be bred with
@@ -164,9 +184,9 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		// Loop through all mobs on the map
 		for(var i = 0; i < entities.length; i++){
 			// Check if the mobs being compared are not the same mob and can breed before comparing colors
-			if(entities[i] != this && this.canBreed && entities[i].canBreed){
+			if(entities[i] != this && this.canBreed ){//&& entities[i].canBreed){
 				// Check if mob is close enough of an rgb value
-				if(deltaE(rgb2lab([this.r, this.g, this.b]), rgb2lab([entities[i].r, entities[i].g, entities[i].b])) < 20){
+				if(compareRgb(this.rgb, entities[i].rgb) < 20){
 					matched.push(entities[i])
 				}
 			}
@@ -200,7 +220,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-		this.findFood = function(foodList){
+		this.findFood = function(){
 		if(typeof(foods[0]) == "undefined"){
 			return undefined
 		}else{
@@ -217,13 +237,28 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.breed = function(other){
-		this.breedNeed = 0
-		other.breedNeed = 0
+		this.breedNeed -= this.feedNeed
+		this.canBreed = false
+		//other.breedNeed -= other.feedNeed
+		//other.canBreed = false
 		childLifespan = this.lifeSpan * .2 + other.lifeSpan * .2
+		var rand = [this, other]
+		childSize = mutate(rand[round(random(0,1))].minSize, [40, 80 + .2*this.minSize])
+		childMaxSpeed = mutate(rand[round(random(0,1))].maxXSpeed, [8, 40 + .2*this.maxXSpeed])
+		childFeedNeed = mutate(rand[round(random(0,1))].feedNeed, [800, 2000 + .2*this.feedNeed])
 		this.lifeSpan *= .8
 		other.lifeSpan *= .8
-		entities.push(new Mob(mutate(average(this.r, other.r), 255), mutate(average(this.g, other.g), 255), mutate(average(this.b, other.b), 255), average(this.x, other.x), average(this.y, other.y), average(this.minSize, 
-		other.minSize), childLifespan, foods, this.size))
+		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan, foods, rand[round(random(0,1))].shape)
+		
+		child.maxXSpeed = childMaxSpeed
+		child.maxYSpeed = childMaxSpeed
+		child.feedNeed = childFeedNeed
+		if(this.generation > other.generation){
+			child.generation = this.generation + 1
+		}else{
+			child.generation = other.generation + 1
+		}
+		entities.push(child)
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -269,7 +304,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 						//Check all the mobs in the same sector and adjacent sectors
 						}else if(other.mob && other != this){
 							//Check to see if the colors are similar
-							if(deltaE(rgb2lab([this.r, this.g, this.b]), rgb2lab([other.r, other.g, other.b])) < 20){
+							if(compareRgb(this.rgb, other.rgb)
+							< 20){
 								//Check the distance between the selected mob and the possible mate
 								if (dist(this.x, this.y, other.x, other.y) < dist(this.x, this.y, this.closestMate.x, this.closestMate.y)){
 									//If the distance is shorter than the current closest mate, change the closest mate to this one

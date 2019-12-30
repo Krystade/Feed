@@ -5,6 +5,7 @@ function Menu (x, y) {
 	// For the menu itself
 	this.width = 140*2
 	this.height = 350
+	// For the buttons
 	this.size = [50,20]
 	
 	//Make all the buttons/DOM elements
@@ -15,19 +16,36 @@ function Menu (x, y) {
 	
 	// Ungroup
 	ungroupButton = createButton('Ungroup')
-	ungroupButton.size(100,20)
+	ungroupButton.size(105,20)
 	ungroupButton.position(menuButton.x + 20, menuButton.y + 40)
 	ungroupButton.mousePressed(ungroup)
 	// Clear mobs
 	clearMobsButton = createButton('Clear Mobs')
-	clearMobsButton.size(100,20)
+	clearMobsButton.size(105,20)
 	clearMobsButton.position(menuButton.x + 20, menuButton.y + 40 + 30*1)
 	clearMobsButton.mousePressed(clearMobPressed)
 	// Clear food
 	clearFoodButton = createButton('Clear Food')
-	clearFoodButton.size(100,20)
+	clearFoodButton.size(105,20)
 	clearFoodButton.position(menuButton.x + 20, menuButton.y + 40 + 30*2)
 	clearFoodButton.mousePressed(clearFoodPressed)
+	//Follow Oldest Mob	
+	oldestButton = createButton('Oldest Mob')
+	oldestButton.size(105,20)
+	oldestButton.position(menuButton.x + 160, menuButton.y + 40)
+	oldestButton.mousePressed(highlightOldest)
+	//Follow Healthiest Mob
+	textSize(5) 
+	healthiestButton = createButton('Healthiest Mob')
+	healthiestButton.size(105,20)
+	healthiestButton.position(menuButton.x + 160, menuButton.y + 70)
+	healthiestButton.mousePressed(highlightHealthiest)
+	
+	nextMobButton = createButton('Next Mob')
+	nextMobButton.size(105,20)
+	nextMobButton.position(menuButton.x + 160, menuButton.y + 100)
+	nextMobButton.mousePressed(highlightNext)
+	
 	// Select click mode 
 	clickRadio = createRadio()
 	clickRadio.position(menuButton.x + 50, menuButton.y + 20 + 30*4)
@@ -49,15 +67,6 @@ function Menu (x, y) {
 	colorInput.position(menuButton.x + 105, menuButton.y - 2 + 30*8)
 	colorInput.attribute('placeholder', '0, 0, 0')
 	colorInput.size(90, 15)
-	b1 = createButton('')
-	b1.size(100,20)
-	b1.position(menuButton.x + 160, menuButton.y + 40)
-	b2 = createButton('')
-	b2.size(100,20)
-	b2.position(menuButton.x + 160, menuButton.y + 70)
-	b3 = createButton('')
-	b3.size(100,20)
-	b3.position(menuButton.x + 160, menuButton.y + 100)
 	// Change growth rate of all mobs
 	growthRateInput = createInput('')
 	growthRateInput.position(menuButton.x + 140, menuButton.y + 18 + 30*8)
@@ -68,7 +77,16 @@ function Menu (x, y) {
 	growthRateConfirm.position(menuButton.x + 185, menuButton.y + 15 + 30*8)
 	growthRateConfirm.size(55, 18)
 	growthRateConfirm.mousePressed(changeGrowthRate)
-	
+	// Change rate at which food spawns
+	foodRateInput = createInput('')
+	foodRateInput.position(menuButton.x + 140, menuButton.y + 18 + 30*9)
+	foodRateInput.attribute('placeholder', '.5')
+	foodRateInput.size(40, 15)
+	// Button to set foodRate
+	foodRateConfirm = createButton('Set')
+	foodRateConfirm.position(menuButton.x + 185, menuButton.y + 15 + 30*9)
+	foodRateConfirm.size(55, 18)
+	foodRateConfirm.mousePressed(changeFoodRate)
 	
 	// Select number of mobs created
 	mobsInput = createInput('')
@@ -92,7 +110,7 @@ function Menu (x, y) {
 	foodConfirm.mousePressed(createFood)
 	
 	// All buttons and inputs in an array for easy hiding/showing
-	buttons = [ungroupButton, clearMobsButton, clearFoodButton, b1, b2, b3, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm]
+	buttons = [ungroupButton, clearMobsButton, clearFoodButton, oldestButton, healthiestButton, nextMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm]
 	
 	// Default values for all menu items
 	clickRadio.value('Place')
@@ -117,18 +135,20 @@ function Menu (x, y) {
 			noStroke()
 			textSize(15)
 			text("Click Mode:", this.x + this.width/2, this.y + 20 + 30*4)
-			text("Place Mode:", this.x + this.width/2, this.y + 30*6)
-			if(placeRadio.value() == 'Mob'){
+			if(clickRadio.value() == "Place"){
+				text("Place Mode:", this.x + this.width/2, this.y + 30*6)
+			}
+			if(placeRadio.value() == 'Mob' && clickRadio.value() == "Place"){
 				text("Color Mode:", this.x + this.width/2, this.y + 10 + 30*7)
 			}	
-			if(colorRadio.value() == 'Custom'){
+			if(colorRadio.value() == 'Custom' && placeRadio.value() == "Mob" && clickRadio.value() == "Place"){
 			text("R, G, B:", this.x + this.width/2 - 65, this.y + 10 + 30*8)
 			colorInput.show()
 			}else{
 				colorInput.hide()
 			}
 			text("Growth Rate                       ", this.x + this.width/2, this.y + 30*9)
-			text("Open Spot", this.x + this.width/2, this.y + 30*10)
+			text("Food Rate                          ", this.x + this.width/2, this.y + 30*10)
 			text("Create            mobs            ", this.x + this.width/2, this.y + 30*11)
 			text("Create            foods            ", this.x + this.width/2, this.y + 30*12)	
 			
@@ -140,6 +160,13 @@ function Menu (x, y) {
 				}
 				if(placeRadio.value() == 'Food'){
 					colorRadio.hide()
+					colorInput.hide()
+				}
+				// Don't need to show Place mode and Color mode options if user isn't placing mobs
+				if(clickRadio.value() != "Place"){
+					colorRadio.hide()
+					colorInput.hide()
+					placeRadio.hide()
 				}
 			}
 		}else{
