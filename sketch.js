@@ -109,7 +109,12 @@ function draw() {
 			pressed++
 			if(pressed % 2 == 0 && pressed > 10 ){
 				if(clickRadio.value() == 'Place'){
-					entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
+					if(placeRadio.value() == 'Mob'){
+						entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
+					}else if(placeRadio.value() == 'Food'){
+						foods.push(new Food(mouseXScale, MouseYScale))
+					}
+					
 				}else if(clickRadio.value() == 'Delete'){
 					for(var i = 0; i < entities.length; i++){
 						if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
