@@ -9,9 +9,10 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.minSize = size
 	this.xSpeed = .0001//random(-4, 3)
 	this.ySpeed = .0001//random(-4, 3)
-	this.baseSpeed = random(1, 5)
-	this.maxXSpeed = this.baseSpeed * 8
-	this.maxYSpeed = this.baseSpeed * 8
+	//this.baseSpeed = random(1, 5)
+	this.baseSpeed = (300/this.minSize) + 18 + random(0,3)
+	this.maxXSpeed = this.baseSpeed
+	this.maxYSpeed = this.baseSpeed
 	
 	this.highlighted = false
 	this.shape = shape
@@ -30,6 +31,8 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	//How long since the mob has bred
 	this.breedNeed = 0
 	this.canBreed = false
+	// How many generations in the mob is
+	this.generation = 0
 	// Cooldown is 30 seconds
 	//this.breedCoolDown = fr * 30
 	
@@ -45,6 +48,9 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.update = function(){
+		/*this.baseSpeed = (300/this.minSize) + 20
+		this.maxXSpeed = this.baseSpeed
+		this.maxYSpeed = this.baseSpeed*/
 		this.move()
 		this.display()
 		//this.separate()
@@ -169,7 +175,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		// Loop through all mobs on the map
 		for(var i = 0; i < entities.length; i++){
 			// Check if the mobs being compared are not the same mob and can breed before comparing colors
-			if(entities[i] != this && this.canBreed && entities[i].canBreed){
+			if(entities[i] != this && this.canBreed ){//&& entities[i].canBreed){
 				// Check if mob is close enough of an rgb value
 				if(compareRgb(this.rgb, entities[i].rgb) < 20){
 					matched.push(entities[i])
@@ -222,15 +228,15 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.breed = function(other){
-		this.breedNeed = 0
+		this.breedNeed -= this.feedNeed
 		this.canBreed = false
-		other.breedNeed = 0
-		other.canBreed = false
+		//other.breedNeed -= other.feedNeed
+		//other.canBreed = false
 		childLifespan = this.lifeSpan * .2 + other.lifeSpan * .2
 		var rand = [this, other]
-		childSize = mutate(rand[round(random(0,1))].size, [40, 80])
-		childMaxSpeed = mutate(rand[round(random(0,1))].maxXSpeed, [8, 40])
-		childFeedNeed = mutate(rand[round(random(0,1))].feedNeed, [800, 2000])
+		childSize = mutate(rand[round(random(0,1))].minSize, [40, 80 + .2*this.minSize])
+		childMaxSpeed = mutate(rand[round(random(0,1))].maxXSpeed, [8, 40 + .2*this.maxXSpeed])
+		childFeedNeed = mutate(rand[round(random(0,1))].feedNeed, [800, 2000 + .2*this.feedNeed])
 		this.lifeSpan *= .8
 		other.lifeSpan *= .8
 		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan, foods, rand[round(random(0,1))].shape)
@@ -238,6 +244,11 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		child.maxXSpeed = childMaxSpeed
 		child.maxYSpeed = childMaxSpeed
 		child.feedNeed = childFeedNeed
+		if(this.generation > other.generation){
+			child.generation = this.generation + 1
+		}else{
+			child.generation = other.generation + 1
+		}
 		entities.push(child)
 	}
 	
