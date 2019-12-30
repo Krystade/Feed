@@ -38,7 +38,7 @@ function Stats(x, y, w, h){
 			text("Color: RGB(" + entities[mobIndex].r + "," + entities[mobIndex].g + "," + entities[mobIndex].b + ")", this.x + 5, this.y + offset*6)
 			text("Feed Need: " + round(entities[mobIndex].feedNeed), this.x + 5, this.y + offset*7)
 			text("Breed Need: " +  round(entities[mobIndex].breedNeed), this.x + 5, this.y + offset*8)
-			text("Stat: " , this.x + 5, this.y + offset*9)
+			text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + offset*9)
 			text("Stat: " , this.x + 5, this.y + offset*10)
 			text("Stat: " , this.x + 5, this.y + offset*11)
 			
