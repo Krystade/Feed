@@ -1,4 +1,4 @@
-function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
+function Mob (r, g, b, x, y, size, lifeSpan){
 	this.mob = true
 	this.food = false
 	//Location and Speed
@@ -15,24 +15,29 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.maxYSpeed = this.baseSpeed
 	
 	this.highlighted = false
-	this.shape = shape
 	this.sector = 0
 	this.sectorsAdj = []
 	
-	//Aging and Growth
+	// Aging and Growth
 	this.frames = ceil(random(0, 10))
 	this.lifeSpan = lifeSpan
-	//How quickly they grow
+	// Time when mob was created
+	this.created = getTime()
+	// How quickly they grow
 	this.growth = 2 * growthRate
 	
 	//How long it has been since the mob has fed
-	this.feedNeed = random(800, 2000)
+	this.feedNeed = random(400, 4000)
 	//Breeding
 	//How long since the mob has bred
 	this.breedNeed = 0
+	// Cap number of offspring created at once to 5
+	this.maxBreedNeed = this.feedNeed*5
 	this.canBreed = false
 	// How many generations in the mob is
 	this.generation = 0
+	// How many children the mob has had
+	this.numChildren = 0
 	// Cooldown is 30 seconds
 	//this.breedCoolDown = fr * 30
 	
@@ -57,13 +62,22 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.update = function(){
+		//lifeSpan decreases every 30 frames (1 sec)
+		this.lifeSpan -= 1/fr
+		this.frames++
+		if (this.frames >= 15){
+			this.frames = 0
+		}
 		/*this.baseSpeed = (300/this.minSize) + 20
 		this.maxXSpeed = this.baseSpeed
 		this.maxYSpeed = this.baseSpeed*/
 		this.move()
+
 		this.display()
 		//this.separate()
-		this.breedNeed++
+		if(this.maxBreedNeed > this.breedNeed){
+			this.breedNeed++
+		}
 		// If the mob is targetting another mob and is close enough, breed
 		if(typeof(this.target) != "undefined" && this.target.mob && dist(this.x, this.y, this.target.x, this.target.y) < (this.size/2 + this.target.size/2)){
 			this.breed(this.target)
@@ -122,12 +136,6 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.move = function(){
 		this.x += this.xSpeed
 		this.y += this.ySpeed
-		//lifeSpan decreases every 30 frames (1 sec)
-		this.lifeSpan -= 1/fr
-		this.frames++
-		if (this.frames >= 15){
-			this.frames = 0
-		}
 
 		//Speed Managment
 		//If a mob moves faster than the max pixels a frame in the x direction, slow it down to the max
@@ -244,21 +252,23 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		childLifespan = this.lifeSpan * .2 + other.lifeSpan * .2
 		var rand = [this, other]
 		childSize = mutate(rand[round(random(0,1))].minSize, [40, 80 + .2*this.minSize])
-		childMaxSpeed = mutate(rand[round(random(0,1))].maxXSpeed, [8, 40 + .2*this.maxXSpeed])
+		//childMaxSpeed = mutate(rand[round(random(0,1))].maxXSpeed, [8, 40 + .2*this.maxXSpeed])
 		childFeedNeed = mutate(rand[round(random(0,1))].feedNeed, [800, 2000 + .2*this.feedNeed])
 		this.lifeSpan *= .8
-		other.lifeSpan *= .8
-		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan, foods, rand[round(random(0,1))].shape)
+		//other.lifeSpan *= .8
+		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan)
 		
-		child.maxXSpeed = childMaxSpeed
-		child.maxYSpeed = childMaxSpeed
+		//child.maxXSpeed = childMaxSpeed
+		//child.maxYSpeed = childMaxSpeed
 		child.feedNeed = childFeedNeed
+		child.maxBreedNeed = child.feedNeed*5
 		if(this.generation > other.generation){
 			child.generation = this.generation + 1
 		}else{
 			child.generation = other.generation + 1
 		}
 		entities.push(child)
+		this.numChildren += 1
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -276,7 +286,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 	this.separate = function(){
 		//If the mobs get to 90% of their max size allow them to split into two mobs half the size with half the lifespan
 		if(this.size > this.maxSize * .9 && this.lifeSpan > 30 || this.lifeSpan > 90 && this.size >= this.minSize * 2){
-			entities.push(new Mob(this.r, this.g, this.b, this.x, this.y, this.minSize, this.minSize/this.size * this.lifeSpan, foods, this.shape))
+			entities.push(new Mob(this.r, this.g, this.b, this.x, this.y, this.minSize, this.minSize/this.size * this.lifeSpan))
 			this.size -= this.minSize
 			this.lifeSpan -= this.minSize/this.size * this.lifeSpan
 		}
@@ -335,5 +345,7 @@ function Mob (r, g, b, x, y, size, lifeSpan, foods, shape){
 		}
 	}
 	
-	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	this.calcSector = function(){
+		
+	} /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 }
