@@ -16,6 +16,8 @@ var foodRate = .5
 // Frame rate cap. number of frames per second
 var fr = 30
 
+var bground
+
 var entities = []
 var foods = []
 var colors = []
@@ -23,9 +25,9 @@ var pressed = 0
 var menuOpen = false
 var placeColor = [0, 0, 0]
 
-var sectorDimensions = []
 var sectorSize = 2000
 var sectors = []
+// [x, y]
 var mouseSector = [0, 0]
 var mouseXScale = 0
 var MouseYScale = 0
@@ -36,23 +38,31 @@ function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
 	// Setting the area that food is allowed to spawn in
-	aWidth = sectorSize * 12
-	aHeight = sectorSize * 12
+	aWidth = sectorSize * 30
+	aHeight = sectorSize * 30
+	// Color of the background
+	bground = color(210, 220, 235)
+	// The range of sizes that mobs are spawned in
+	sizeRange = [10, 160]
 	
-	for(var i = 0; i < aWidth; i += sectorSize){
-		for(var j = 0; j < aHeight; j += sectorSize){
-			sectorDimensions.push(/*[x1, x2, y1, y2]*/[j, j + sectorSize, i, i + sectorSize])
+	// Fill sectors with empty arrays
+		// Number of sectors wide
+		for(var i = 0; i < aWidth/sectorSize; i++){
+			sectors.push([])
+			// Number of sectors tall
+			for(var j = 0; j < aHeight/sectorSize; j++){
+				sectors[i].push([])
+			}
 		}
-	}
 	
 	for(var i = 0; i < 100; i++){		
-		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "circle"))
+		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10))
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "square"))
 		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
-		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(40, 80), /*life*/random(8, 14), foods, "circle"))
+		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(sizeRange[0], sizeRange[1]), /*life*/random(8, 14)))
 	}
 	
-	for(var i = 0; i < 50; i++){
+	for(var i = 0; i < 250; i++){
 		foods.push(new Food(ceil(random(30, aWidth)), ceil(random(30, aHeight))))
 	}
 	
@@ -62,127 +72,160 @@ function setup() {
 	
 	stats = new Stats(windowWidth - 260, 80, 240, 300)
 	print(displayAvgStats())
+	
+	// Put the camera near the center of the spawning area
+	trans = [-aWidth/2, -aHeight/2]
 }
 
 function draw() {
-		// Number to scale the canvas by
-		scaleNum = Math.pow(10, zoom)
-		// The mouse position on the map not the screen
-		mouseXScale = mouseX * (1/scaleNum) - trans[0]
-		MouseYScale = mouseY * (1/scaleNum) - trans[1]
+	// Every 10 minutes display average stats
+	if(frameCount%(10*60*fr) == 0){
+		print(displayAvgStats())
+	}
+	// Number to scale the canvas by
+	scaleNum = Math.pow(10, zoom)
+	// The mouse position on the map not the screen
+	mouseXScale = mouseX * (1/scaleNum) - trans[0]
+	MouseYScale = mouseY * (1/scaleNum) - trans[1]
+	// Move all entities right simulating the view moving left
+	if (keyIsDown(LEFT_ARROW)){
+		trans[0] += 1250
+	}	
+	// Move view up
+	if (keyIsDown(UP_ARROW)){
+		trans[1] += 1250
+	}
+	// Move view right
+	if (keyIsDown(RIGHT_ARROW)){
+		trans[0] -= 125
+	}
+	// Move view down
+	if (keyIsDown(DOWN_ARROW)){
+		trans[1] -= 125
+	}
 	if(!paused){
 		push()
 		// Set the background color
-		background (210, 220, 235)
-
-		// Scale and translate all entities to simulate zooming and moving
+		background(bground)
+		// sScale and translate all entities to simulate zooming and moving
 		scale(scaleNum)
 		translate(trans[0], trans[1])
 
-		for(var i = 0; i < sectorDimensions.length; i++){
-			//Just want the outline of the sectors
-			noFill()
-			//Make the outline a light grey color
-			stroke(150)
-			rect(sectorDimensions[i][0], sectorDimensions[i][2], sectorSize, sectorSize, 5)
-		}
 
-		// Move all entities right simulating the view moving left
-		if (keyIsDown(LEFT_ARROW)){
-			trans[0] += 125
-		}	
-		// Move view up
-		if (keyIsDown(UP_ARROW)){
-			trans[1] += 125
-		}
-		// Move view right
-		if (keyIsDown(RIGHT_ARROW)){
-			trans[0] -= 125
-		}
-		// Move view down
-		if (keyIsDown(DOWN_ARROW)){
-			trans[1] -= 125
-		}
 
 		//Detect if the mouse is being held down to make a mob every 3 frames
 		if (mouseIsPressed){
 			pressed++
-			if(pressed % 2 == 0 && pressed > 10 ){
-				if(clickRadio.value() == 'Place'){
-					if(placeRadio.value() == 'Mob'){
-						entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
-					}else if(placeRadio.value() == 'Food'){
-						foods.push(new Food(mouseXScale, MouseYScale))
-					}
-					
-				}else if(clickRadio.value() == 'Delete'){
-					for(var i = 0; i < entities.length; i++){
-						if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
-							entities.splice(i,1)
-							i--;
-						}
-					}
-				}else if(clickRadio.value() == 'Select'){
-								for(var i = entities.length - 1; i >= 0; i--){
-				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
-					// Check if the clicked on mob is already highlighted
-					if(entities[i].highlighted == false){
-						//If it isnt already highlighted, highlight it
-						entities[i].highlighted = true
-						if(typeof(highlightedMob) != "undefined"){
-							highlightedMob.highlighted = false
-							highlightedMob = entities[i]
+			if(pressed % 2 == 0 && pressed > 10){
+				switch (clickRadio.value()){
+					case "Place":
+						if(placeRadio.value() == 'Mob'){
+							if(colorRadio.value() == 'Random'){
+								entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
+							}else{
+								placeColor = split(colorInput.value(), ',')
+								entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
+							}
 						}else{
-							highlightedMob = entities[i]
+							foods.push(new Food(mouseXScale, MouseYScale))
 						}
-						print("Clicked on", highlightedMob)
 						break
-					// If the mob is already highlighted, unhighlight it
-					}else{
-						entities[i].highlighted = false
-						highlightedMob = undefined
-					}
-				}
-			}
+					case "Delete":
+						for(var i = 0; i < entities.length; i++){
+							if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+								print("Clicked on ", entities[i])
+								entities.splice(i,1)
+								i--;
+							}
+						}
+						break
+					case "Select":
+						for(var i = entities.length - 1; i >= 0; i--){
+							if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
+								// Check if the clicked on mob is already highlighted
+								if(entities[i].highlighted == false){
+									//If it isnt already highlighted, highlight it
+									entities[i].highlighted = true
+									if(typeof(highlightedMob) != "undefined"){
+										highlightedMob.highlighted = false
+										highlightedMob = entities[i]
+									}else{
+										highlightedMob = entities[i]
+									}
+									print("Clicked on", highlightedMob)
+									break
+								// If the mob is already highlighted, unhighlight it
+								}else{
+									entities[i].highlighted = false
+									highlightedMob = undefined
+								}
+							}
+						}
+						break		
 				}
 			}
 		}else{
 			pressed = 0
 		}
-
 		//(foodRate) foods are spawned each frame
-		if (foodRate < 1 && foodRate > 0 && frameCount % (1/foodRate) == 0){
+		if (foodRate > 0){
+			// Im not exactly sure how this works but it does so im not going to change it.
+			if(((frameCount*foodRate)%1).toFixed(4) < foodRate){
 			foods.push(new Food(random(30, aWidth), random(30, aHeight)))
-		}else if (foodRate >= 1){
-			for (var i = 0; i < foodRate; i++){
-				foods.push(new Food(random(30, aWidth), random(30, aHeight)))
+			}
+			// When foodRate is greater than 1 need to spawn atleast 1 food every frame
+			if(foodRate >= 1){
+				for(var i = 0; i < int(foodRate); i++){
+					foods.push(new Food(random(30, aWidth), random(30, aHeight)))
+				}
 			}
 		}else{
-		//Don't spawn food if food rate is negative
-		}
-		//Display food
-		for(var i = 0; i < foods.length; i++){
-			foods[i].display()
+		//Don't spawn food if food rate is 0 or negative
 		}
 		// Reset the sector array and fill it with empty arrays
-		sectors = []
-		for(var i = 0; i < Math.sqrt(sectorDimensions.length); i++){
+	/*	sectors = []
+		// Fill sectors with empty arrays
+		// Number of sectors wide
+		for(var i = 0; i < aWidth/sectorSize; i++){
 			sectors.push([])
-			for(var j = 0; j < Math.sqrt(sectorDimensions.length); j++){
+			// Number of sectors tall
+			for(var j = 0; j < aHeight/sectorSize; j++){
 				sectors[i].push([])
 			}
+		}
+		*/
+		/*
+		sectors = 	[0,0],[1,0],[2,0]
+					[0,1],[1,1],[2,1]
+					[0,2],[2,1],[2,2]
+		*/
+		//Display food and place it in the right sector
+		for(var i = 0; i < foods.length; i++){
+			foods[i].display()
 		}
 		// Clear out the colors array to refill them with new values
 		colors = []
 		for(var i = 0; i < entities.length; i++){
-			// Remove dead entities
+			// Remove dead mobs from sectors[]
 			if(entities[i].lifeSpan <= 0){
+				secX = entities[i].sector[0]
+				secY = entities[i].sector[1]
+				// Loop through the sector that the mob is in and remove it from the array when found
+				for(var j = 0; j < sectors[secX][secY].length; j++){
+					if(entities[i] == entities[j]){
+						sectors[secX][secY].splice(j,1)
+						break
+					}
+				}
+					sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
+				// Remove dead mobs from entities[]
 				if(i == 0){
 					entities.shift()
 				}else{
 					entities.splice(i, 1)
 					i--
 				}
+				
 			}
 			// Make sure the entity is valid
 			if (entities[i]){
@@ -196,21 +239,24 @@ function draw() {
 				}else{
 					entities[i].findTarget(entities, foods)
 				}
-				
-				// Filling the sectors array
-				//j is row
-				for(var j = 0; j < sectors.length; j++){
-					//k is column
-					for(var k = 0; k < sectors[j].length; k++){
-						if(entities[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
-						sectors[j][k].push(entities[i])
-						entities[i].sector = [j, k]
-						entities[i].sectorsAdj = [ [j-1, k-1], [j-1, k], [j-1, k+1], 
-												   [j, k-1]  , [j, k]  , [j, k+1], 
-												   [j+1, k-1], [j+1, k], [j+1, k+1] ]
+				entities[i].prevSector = entities[i].sector
+				// Finding and assigning the entities sector
+				entities[i].sector = calcSector(entities[i].x, entities[i].y)
+				// If the mob moves to a different sector
+				if((entities[i].sector[0] != entities[i].prevSector[0]) || (entities[i].sector[1] != entities[i].prevSector[1])){
+					 secX = entities[i].sector[0]
+					 secY = entities[i].sector[1]
+					// Loop through the sector that the mob is in and remove it from the array when found
+					for(var j = 0; j < sectors[secX][secY].length; j++){
+						if(entities[i] == entities[j]){
+							sectors[secX][secY].splice(j,1)
+							//print("moved")
+							break
 						}
 					}
+					sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
 				}
+				//sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
 				
 				// Have the camera follow highlighted mob
 				if(typeof(highlightedMob) != "undefined"){
@@ -226,8 +272,19 @@ function draw() {
 				//Check if the mob exists and if it is within range of food
 					if(foods[j]){
 						if(entities[i].eats(foods[j])){
+							//If it does, remove the food and lengthen the mob's life
 							entities[i].lifeSpan += foods[j].value
-							//If it does remove the food and lengthen the mob's life
+							
+							secX = foods[j].sector[0]
+							secY = foods[j].sector[1]
+							// Loop through the sector that the food is in and remove it from the array when found
+							for(var k = 0; k < sectors[secX][secY].length; k++){
+								if(foods[j] == foods[k]){
+									sectors[secX][secY].splice(k,1)
+									break
+								}
+							}
+					sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
 							if(j == 0){
 								foods.shift()
 							}else{
@@ -263,22 +320,8 @@ function draw() {
 				}
 			}
 		}
-		for(var i = 0; i < foods.length; i++){
-			//j is row
-			for(var j = 0; j < sectors.length; j++){
-				//k is column
-				for(var k = 0; k < sectors[j].length; k++){
-					//Find which sector the mouse is in and store it in the variable mouseSector
-					if(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][0] < mouseXScale && mouseXScale < sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][1] && sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][2] < MouseYScale && MouseYScale < sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k][3]){
-						mouseSector = [k, j]
-					}
-					if(foods[i].isInside(sectorDimensions[Math.sqrt(sectorDimensions.length) * j + k])){
-						sectors[k][j].push(foods[i])
-						break
-					}
-				}
-			}
-		}
+		mouseSector = calcSector(mouseXScale, MouseYScale)
+		
 		// Find which colors have the most circles
 		temp = []
 		topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
@@ -352,33 +395,42 @@ function draw() {
 		text(str(round(frameRate())), windowWidth - 30, 25)
 		textSize(15)
 		
-/* Debugging */
+/* Debugging *//*
+		// Display the sector the mouse is in
+		text("Sector: " + mouseSector, mouseX, mouseY - 35)
 		// Display the x and y position of the mouse in the area
-		//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
+		text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 		// Display the x and y position of the mouse in the screen
-		//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+		text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
 		pop()
+		*/
 	}
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function ungroup(){
-	var section = {aWidth:aWidth / ceil(sqrt(entities.length)), aHeight:aHeight / ceil(sqrt(entities.length))}
-	var m = 0
-	for (var i = 0; i < sqrt(entities.length); i++){
-		for (var j = 0; j < sqrt(entities.length); j++){
-			entities[m].x = section.aWidth * i + .5 * section.aWidth
-			entities[m].y = section.aHeight * j + .5 * section.aHeight
-			m++
-			if (m == entities.length){
-				break
-			}
+	function calcSector(x, y){
+		// Which column
+		sectorX = int(x/(sectorSize))
+		// Which Row
+		sectorY = int(y/(sectorSize))
+		
+		// If the entity is outside of the food spawning area, pretend they're just in the closest sector
+		// Check X Sector
+		if(sectorX < 0){
+			sectorX = 0
+		}else if(sectorX >= aWidth/sectorSize){
+				 sectorX = aWidth/sectorSize - 1
 		}
-		if (m == entities.length){
-			break
+		// Check Y Sector
+		if(sectorY < 0){
+			sectorY = 0
+		}else if(sectorY >= aHeight/sectorSize){
+				 sectorY = aHeight/sectorSize - 1
 		}
-	}
-}
+		
+		sector = [sectorX, sectorY]
+		return sector
+	} 
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
@@ -391,11 +443,11 @@ function mutate(gene, range){
 		// Don't mutate 
 	}else if(rand < .8){
 		//Subtracting .5 so the random number is from -.5 to +.5
-		// 10% max increase or decrease
-		gene = gene + (random() - .5)*gene/5
+		// 10% max increase or decrease of max
+		gene += (random() - .5)*max/5
 	}else if(rand < .99){
-		// 20% max increase or decrease
-		gene = gene + (random() - .5)*gene/2.5
+		// 20% max increase or decrease of max
+		gene += (random() - .5)*max/2.5
 	}else{
 		gene = random(min, max)
 		//print("Random Gene " + getTime())
@@ -415,36 +467,41 @@ function compareRgb(color1, color2){
 	return deltaE(rgb2lab(color1), rgb2lab(color2))
 }
 
+function highlight(entity){
+	if(typeof(highlightedMob) != "undefined"){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entity
+	highlightedMob.highlighted = true
+}
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function displayAvgStats(){
-	sumMaxSize = 0
-	sumMinSize = 0
-	sumMaxSpeed = 0
-	sumFeedNeed = 0
-	sumGeneration = 0
+	avgLifespan = 0
+	avgMaxSize = 0
+	avgMinSize = 0
+	avgMaxSpeed = 0
+	avgFeedNeed = 0
+	avgGeneration = 0
+	avgChildren = 0
 	minGeneration = 999999
 	maxGeneration = -1
 	for(var i = 0; i < entities.length; i++){
-		sumMaxSize += entities[i].maxSize
-		sumMinSize += entities[i].minSize
-		sumMaxSpeed += entities[i].maxXSpeed
-		sumFeedNeed += entities[i].feedNeed
-		sumGeneration += entities[i].generation
+		avgLifespan += entities[i].lifeSpan/entities.length
+		avgMaxSize += entities[i].maxSize/entities.length
+		avgMinSize += entities[i].minSize/entities.length
+		avgMaxSpeed += entities[i].maxXSpeed/entities.length
+		avgFeedNeed += entities[i].feedNeed/entities.length
+		avgGeneration += entities[i].generation/entities.length
+		avgChildren += entities[i].numChildren/entities.length
 		if(entities[i].generation > maxGeneration){
 			maxGeneration = entities[i].generation
 		}else if(entities[i].generation < minGeneration){
 			minGeneration = entities[i].generation
 		}else{}
-		
 	}
-	avgMaxSize = sumMaxSize/entities.length
-	avgMinSize = sumMinSize/entities.length
-	avgMaxSpeed = sumMaxSpeed/entities.length
-	avgFeedNeed = sumFeedNeed/entities.length
-	avgGeneration = sumGeneration/entities.length
 	
-	/*print*/return("\nAverage Max Size: " + avgMaxSize + "\nAverage Min Size: " + avgMinSize + "\nAverage Max Speed: " + avgMaxSpeed + "\nAverage Feed Need: " + avgFeedNeed + "\nMin Generation: " + minGeneration + "\nMax Generation: " + maxGeneration + "\nAverage Generation: " + avgGeneration)
+	/*print*/return("\nTime: " + getTime() + "\nPopulation: " + entities.length + "\nAverage Lifespan: " + avgLifespan + "\nAverage Max Size: " + avgMaxSize + "\nAverage Min Size: " + avgMinSize + "\nAverage Max Speed: " + avgMaxSpeed + "\nAverage Feed Need: " + avgFeedNeed + "\nAverage # of Children: " + avgChildren +"\nMin Generation: " + minGeneration + "\nMax Generation: " + maxGeneration + "\nAverage Generation: " + avgGeneration)
 }
 
 function getTime(){
@@ -465,111 +522,6 @@ function menuPressed(){
 			menuOpen = false
 		}
 		//print("Menu opened", menuOpen)
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function clearMobPressed(){
-	entities = []
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function clearFoodPressed(){
-	foods = []
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function highlightOldest(){
-	var oldest = entities[0]
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = oldest
-	highlightedMob.highlighted = true
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function highlightHealthiest(){
-	var healthiest = entities[0]
-	for(var i = 1; i < entities.length; i++){
-		if(entities[i].lifeSpan > healthiest.lifeSpan){
-			healthiest = entities[i]
-		}
-	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = healthiest
-	highlightedMob.highlighted = true
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function highlightNext(){
-	var index = 0
-	for(var i = 0; i < entities.length; i++){
-		if(entities[i] == highlightedMob){
-			if(i == entities.length - 1){
-				index = 0
-			   		
-			}else{
-				index = i+1
-			}
-			break
-		}
-	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = entities[index]
-	highlightedMob.highlighted = true
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function createMobs(){
-		for(var i = 0; i < mobsInput.value(); i++){
-		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
-	}
-	if(colorRadio.value() == 'Random'){
-		for(var i = 0; i < mobsInput.value(); i++){
-			entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), random(0, aWidth), random(0, aHeight), random(40, 80), 10, foods, "circle"))
-		}
-	}else{
-		for(var i = 0; i < mobsInput.value(); i++){
-			placeColor = split(colorInput.value(), ',')
-			entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXs, mouseYs, random(40, 80), 10, foods, "circle"))
-		}
-	}
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function createFood(){
-	for(var i = 0; i < foodInput.value(); i++){
-		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
-	}
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function changeGrowthRate(){
-	if(float(growthRateInput.value()) == float(growthRateInput.value())){
-		growthRate = float(growthRateInput.value())
-		growthTimer = 30
-	}
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function changeFoodRate(){
-	if(float(foodRateInput.value()) == float(foodRateInput.value())){
-		foodRate = float(foodRateInput.value())
-	}
-	print("foodRate changed to " + float(foodRateInput.value()))
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -603,49 +555,51 @@ function mousePressed() {
 			mouseY < stats.y + stats.h){
 			 // Prevent any spawning/deleting/selecting
 	}*/else{
-		if(clickRadio.value() == 'Place'){
-		   if(placeRadio.value() == 'Mob'){
-			   if(colorRadio.value() == 'Random'){
-				   entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
-			   }else{
-				   placeColor = split(colorInput.value(), ',')
-				   entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(40, 80), 10, foods, "circle"))
-			   }
-		   }else{
-			   foods.push(new Food(mouseXScale, MouseYScale))
-		   }
-			
-		}else if(clickRadio.value() == 'Delete'){
-			for(var i = 0; i < entities.length; i++){
-				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
-					print("Clicked on ", entities[i])
-					entities.splice(i,1)
-					i--;
-				}
-			}
-			
-		}else if(clickRadio.value() == 'Select'){
-			for(var i = entities.length - 1; i >= 0; i--){
-				if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
-					// Check if the clicked on mob is already highlighted
-					if(entities[i].highlighted == false){
-						//If it isnt already highlighted, highlight it
-						entities[i].highlighted = true
-						if(typeof(highlightedMob) != "undefined"){
-							highlightedMob.highlighted = false
-							highlightedMob = entities[i]
-						}else{
-							highlightedMob = entities[i]
-						}
-						print("Clicked on", highlightedMob)
-						break
-					// If the mob is already highlighted, unhighlight it
+		switch (clickRadio.value()){
+			case "Place":
+				if(placeRadio.value() == 'Mob'){
+					if(colorRadio.value() == 'Random'){
+						entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
 					}else{
-						entities[i].highlighted = false
-						highlightedMob = undefined
+						placeColor = split(colorInput.value(), ',')
+						entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
+					}
+				}else{
+					foods.push(new Food(mouseXScale, MouseYScale))
+				}
+				break
+			case "Delete":
+				for(var i = 0; i < entities.length; i++){
+					if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+						print("Clicked on ", entities[i])
+						entities.splice(i,1)
+						i--;
 					}
 				}
-			}
+				break
+			case "Select":
+				for(var i = entities.length - 1; i >= 0; i--){
+					if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
+						// Check if the clicked on mob is already highlighted
+						if(entities[i].highlighted == false){
+							//If it isnt already highlighted, highlight it
+							entities[i].highlighted = true
+							if(typeof(highlightedMob) != "undefined"){
+								highlightedMob.highlighted = false
+								highlightedMob = entities[i]
+							}else{
+								highlightedMob = entities[i]
+							}
+							print("Clicked on", highlightedMob)
+							break
+						// If the mob is already highlighted, unhighlight it
+						}else{
+							entities[i].highlighted = false
+							highlightedMob = undefined
+						}
+					}
+				}
+				break		
 		}
 	}
 }
