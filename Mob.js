@@ -25,12 +25,13 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//How long it has been since the mob has fed
 	this.feedNeed = random(400, 4000)
 	//Breeding
+	// Maximum number of offspring that can be had at once
+	this.litterSize = int(random(1,8))
 	//How long since the mob has bred
 	this.breedNeed = 0
 	// Cap number of offspring created at once to 5
-	this.maxBreedNeed = this.feedNeed*5
+	this.maxBreedNeed = this.feedNeed * this.litterSize
 	this.canBreed = false
-	
 	// How many generations in the mob is
 	this.generation = 0
 	// Array of all ancestors
@@ -86,6 +87,28 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		if(typeof(this.target) != "undefined" && this.target.mob && dist(this.x, this.y, this.target.x, this.target.y) < (this.size/2 + this.target.size/2)){
 			this.breed(this.target)
 		}
+		
+		// If the mob moves to a different sector
+		if((this.sector[0] != this.prevSector[0]) || (this.sector[1] != this.prevSector[1])){
+			secX = this.sector[0]
+			secY = this.sector[1]
+			sectors[secX][secY].push(this)
+			// Check if the previous sector the mob was in was valid and if so
+			// Loop through the sector that the mob is in and remove it from the array when found
+			if(this.prevSector[0] != -1 && this.prevSector[1] != -1){
+				for(var j = 0; j < sectors[this.prevSector[0]][this.prevSector[1]].length; j++){
+					if(this == entities[j]){
+						sectors[this.prevSector[0]][this.prevSector[1]].splice(j,1)
+						//print("moved from " + this.prevSector + " to " + this.sector)
+						break
+					}
+				}
+			}
+		}
+				// Update entities sector
+				this.prevSector = this.sector
+				// Finding and assigning the entities sector
+				this.sector = calcSector(this.x, this.y)
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
@@ -271,6 +294,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}else{
 			child.generation = other.generation + 1
 		}
+		child.litterSize = mutate(rand[round(random(0,1))].litterSize, [1, int(8 + this.litterSize*.2)])
 		child.tree = this.tree
 		child.tree.push([this, other])
 		entities.push(child)
