@@ -131,13 +131,22 @@ function draw() {
 						}
 						break
 					case "Delete":
-						for(var i = 0; i < entities.length; i++){
-							if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
-								print("Clicked on ", entities[i])
-								entities.splice(i,1)
-								i--;
+				for(var i = 0; i < entities.length; i++){
+					if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+						// Loop through the sector array that the entity is and remove it
+						secX = entities[i].sector[0]
+						secY = entities[i].sector[1]
+						for(var j = 0; j < sectors[secX][secY].length; j++){
+							if(sectors[secX][secY][j] == entities[i]){
+								sectors[secX][secY].splice(j,1)
+								break
 							}
 						}
+						print("Clicked on ", entities[i])
+						entities.splice(i,1)
+						i--;
+					}
+				}
 						break
 					case "Select":
 						for(var i = entities.length - 1; i >= 0; i--){
@@ -212,12 +221,11 @@ function draw() {
 				secY = entities[i].sector[1]
 				// Loop through the sector that the mob is in and remove it from the array when found
 				for(var j = 0; j < sectors[secX][secY].length; j++){
-					if(entities[i] == entities[j]){
+					if(entities[i] == sectors[secX][secY][j]){
 						sectors[secX][secY].splice(j,1)
 						break
 					}
 				}
-					sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
 				// Remove dead mobs from entities[]
 				if(i == 0){
 					entities.shift()
@@ -238,25 +246,7 @@ function draw() {
 					}
 				}else{
 					entities[i].findTarget(entities, foods)
-				}
-				entities[i].prevSector = entities[i].sector
-				// Finding and assigning the entities sector
-				entities[i].sector = calcSector(entities[i].x, entities[i].y)
-				// If the mob moves to a different sector
-				if((entities[i].sector[0] != entities[i].prevSector[0]) || (entities[i].sector[1] != entities[i].prevSector[1])){
-					 secX = entities[i].sector[0]
-					 secY = entities[i].sector[1]
-					// Loop through the sector that the mob is in and remove it from the array when found
-					for(var j = 0; j < sectors[secX][secY].length; j++){
-						if(entities[i] == entities[j]){
-							sectors[secX][secY].splice(j,1)
-							//print("moved")
-							break
-						}
-					}
-					sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
-				}
-				//sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
+				}				
 				
 				// Have the camera follow highlighted mob
 				if(typeof(highlightedMob) != "undefined"){
@@ -279,12 +269,11 @@ function draw() {
 							secY = foods[j].sector[1]
 							// Loop through the sector that the food is in and remove it from the array when found
 							for(var k = 0; k < sectors[secX][secY].length; k++){
-								if(foods[j] == foods[k]){
+								if(foods[j] == sectors[secX][secY][k]){
 									sectors[secX][secY].splice(k,1)
 									break
 								}
 							}
-					sectors[entities[i].sector[0]][entities[i].sector[1]].push(entities[i])
 							if(j == 0){
 								foods.shift()
 							}else{
@@ -571,6 +560,15 @@ function mousePressed() {
 			case "Delete":
 				for(var i = 0; i < entities.length; i++){
 					if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+						// Loop through the sector array that the entity is and remove it
+						secX = entities[i].sector[0]
+						secY = entities[i].sector[1]
+						for(var j = 0; j < sectors[secX][secY].length; j++){
+							if(sectors[secX][secY][j] == entities[i]){
+								sectors[secX][secY].splice(j,1)
+								break
+							}
+						}
 						print("Clicked on ", entities[i])
 						entities.splice(i,1)
 						i--;
@@ -619,22 +617,6 @@ function keyPressed() {
 	if (keyCode == 85){
 		ungroup()
 		}
-	//keyCode 67 is c
-	if (keyCode == 67){
-		entities.splice(0, entities.length)
-		}
-	//keycode 187 is = or +
-	if (keyCode == 187){
-		//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
-		growthRate += .1
-		growthTimer = 30
-	}
-	//keyCode 189 is - or _
-	if (keyCode == 189){
-		//Multiply number by 10 then round and divide by 10 to get it rounded to first decimal
-		growthRate -= .1
-		growthTimer = 30
-	}
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
