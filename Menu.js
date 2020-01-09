@@ -16,35 +16,52 @@ function Menu (x, y) {
 	
 	// Ungroup
 	ungroupButton = createButton('Ungroup')
-	ungroupButton.size(105,20)
-	ungroupButton.position(menuButton.x + 20, menuButton.y + 40)
+	ungroupButton.size(85,20)
+	ungroupButton.position(menuButton.x + 8, menuButton.y + 40)
 	ungroupButton.mousePressed(ungroup)
 	// Clear mobs
 	clearMobsButton = createButton('Clear Mobs')
-	clearMobsButton.size(105,20)
-	clearMobsButton.position(menuButton.x + 20, menuButton.y + 40 + 30*1)
-	clearMobsButton.mousePressed(clearMobPressed)
+	clearMobsButton.size(85,20)
+	clearMobsButton.position(menuButton.x + 8, menuButton.y + 40 + 30*1)
+	clearMobsButton.mousePressed(clearMobs)
 	// Clear food
 	clearFoodButton = createButton('Clear Food')
-	clearFoodButton.size(105,20)
-	clearFoodButton.position(menuButton.x + 20, menuButton.y + 40 + 30*2)
-	clearFoodButton.mousePressed(clearFoodPressed)
-	//Follow Oldest Mob	
-	oldestButton = createButton('Oldest Mob')
-	oldestButton.size(105,20)
-	oldestButton.position(menuButton.x + 160, menuButton.y + 40)
-	oldestButton.mousePressed(highlightOldest)
+	clearFoodButton.size(85,20)
+	clearFoodButton.position(menuButton.x + 8, menuButton.y + 40 + 30*2)
+	clearFoodButton.mousePressed(clearFoods)
 	//Follow Healthiest Mob
 	textSize(5) 
-	healthiestButton = createButton('Healthiest Mob')
-	healthiestButton.size(105,20)
-	healthiestButton.position(menuButton.x + 160, menuButton.y + 70)
+	healthiestButton = createButton('Healthiest')
+	healthiestButton.size(85,20)
+	healthiestButton.position(menuButton.x + 98, menuButton.y + 40)
 	healthiestButton.mousePressed(highlightHealthiest)
-	
+	//Follow Oldest Mob	
+	oldestButton = createButton('Oldest')
+	oldestButton.size(85,20)
+	oldestButton.position(menuButton.x + 98, menuButton.y + 70)
+	oldestButton.mousePressed(highlightOldest)
+	// Follow the mob at the next index
 	nextMobButton = createButton('Next Mob')
-	nextMobButton.size(105,20)
-	nextMobButton.position(menuButton.x + 160, menuButton.y + 100)
+	nextMobButton.size(85,20)
+	nextMobButton.position(menuButton.x + 98, menuButton.y + 100)
 	nextMobButton.mousePressed(highlightNext)
+	
+	smallestMobButton = createButton('Smallest')
+	smallestMobButton.size(85,20)
+	smallestMobButton.position(menuButton.x + 188, menuButton.y + 40)
+	smallestMobButton.mousePressed(highlightSmallest)
+	
+	largestMobButton = createButton('Largest')
+	largestMobButton.size(85,20)
+	largestMobButton.position(menuButton.x + 188, menuButton.y + 40 + 30)
+	largestMobButton.mousePressed(highlightLargest)
+	
+	b3 = createButton('Prev Mob')
+	b3.size(85,20)
+	b3.position(menuButton.x + 188, menuButton.y + 40 + 30*2)
+	b3.mousePressed(highlightPrev)//bPlaceHolder)
+
+	
 	
 	// Select click mode 
 	clickRadio = createRadio()
@@ -110,7 +127,7 @@ function Menu (x, y) {
 	foodConfirm.mousePressed(createFood)
 	
 	// All buttons and inputs in an array for easy hiding/showing
-	buttons = [ungroupButton, clearMobsButton, clearFoodButton, oldestButton, healthiestButton, nextMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm]
+	buttons = [ungroupButton, clearMobsButton, clearFoodButton, oldestButton, healthiestButton, nextMobButton, largestMobButton, smallestMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm, b3]
 	
 	// Default values for all menu items
 	clickRadio.value('Place')
@@ -179,3 +196,207 @@ function Menu (x, y) {
 		pop()
 	}
 }
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function ungroup(){
+	var section = {aWidth:aWidth / ceil(sqrt(entities.length)), aHeight:aHeight / ceil(sqrt(entities.length))}
+	var m = 0
+	for (var i = 0; i < sqrt(entities.length); i++){
+		for (var j = 0; j < sqrt(entities.length); j++){
+			entities[m].x = section.aWidth * i + .5 * section.aWidth
+			entities[m].y = section.aHeight * j + .5 * section.aHeight
+			m++
+			if (m == entities.length){
+				break
+			}
+		}
+		if (m == entities.length){
+			break
+		}
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function clearMobs(){
+	entities = []
+	// Loop through each sector in sectors[] and each entity in sectors[][]
+	for(var i = sectors.length - 1; i >= 0; i--){
+		for(var j = sectors[i].length - 1; j >= 0; j--){
+			for(var k = sectors[i][j].length - 1; k >= 0; k--){
+				// Remove any mobs in sectors
+				if(sectors[i][j][k].mob){
+					sectors[i][j].splice(k, 1)
+				}
+			}
+		}
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function clearFoods(){
+	foods = []
+	// Loop through each sector in sectors[] and each entity in sectors[][]
+	for(var i = sectors.length - 1; i >= 0; i--){
+		for(var j = sectors[i].length - 1; j >= 0; j--){
+			for(var k = sectors[i][j].length - 1; k >= 0; k--){
+				// Remove any foods in sectors
+				if(sectors[i][j][k].food){
+					sectors[i][j].splice(k, 1)
+				}
+			}
+		}
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightHealthiest(){
+	var healthiest = entities[0]
+	for(var i = 1; i < entities.length; i++){
+		if(entities[i].lifeSpan > healthiest.lifeSpan){
+			healthiest = entities[i]
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = healthiest
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightOldest(){
+	var oldest = entities[0]
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = oldest
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightNext(){
+	var index = 0
+	for(var i = 0; i < entities.length; i++){
+		if(entities[i] == highlightedMob){
+			if(i == entities.length - 1){
+				index = 0
+			   		
+			}else{
+				index = i+1
+			}
+			break
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entities[index]
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightPrev(){
+	var index = entities.length-1
+	for(var i = 0; i < entities.length; i++){
+		if(entities[i] == highlightedMob){
+			if(i == 0){
+				index = entities.length-1
+			   		
+			}else{
+				index = i-1
+			}
+			break
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entities[index]
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightSmallest(){
+	var smallest = entities[0]
+	for(var i = 1; i < entities.length; i++){
+		if(entities[i].size < smallest.size){
+			smallest = entities[i]
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = smallest
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightLargest(){
+	var largest = entities[0]
+	for(var i = 1; i < entities.length; i++){
+		if(entities[i].size > largest.size){
+			largest = entities[i]
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = largest
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function bPlaceHolder(){
+	//Placeholder for the function that pressing button 3 will activate
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function createMobs(){
+	if(colorRadio.value() == 'Random'){
+		for(var i = 0; i < mobsInput.value(); i++){
+			entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), random(0, aWidth), random(0, aHeight), random(sizeRange[0], sizeRange[1]), 10))
+		}
+	}else{
+		for(var i = 0; i < mobsInput.value(); i++){
+			placeColor = split(colorInput.value(), ',')
+			entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), random(0, aWidth), random(0, aHeight), random(sizeRange[0], sizeRange[1]), 10))
+		}
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function createFood(){
+	for(var i = 0; i < foodInput.value(); i++){
+		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function changeGrowthRate(){
+	if(float(growthRateInput.value()) == float(growthRateInput.value())){
+		growthRate = float(growthRateInput.value())
+		growthTimer = 30
+	}
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function changeFoodRate(){
+	if(float(foodRateInput.value()) == float(foodRateInput.value())){
+		foodRate = float(foodRateInput.value())
+	}
+	print("foodRate changed to " + float(foodRateInput.value()))
+}
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
