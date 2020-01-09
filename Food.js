@@ -6,8 +6,16 @@ function Food (x,y){
 	this.size = 50
 	this.value = 5
 	this.color = color(20, 200, 40)
+	this.sector = [-1, -1]
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.display = function(){
+		if(this.sector[0] == -1){
+			// Assign the correct sector
+			this.sector = calcSector(this.x, this.y)
+			// Push food into sector array
+			sectors[this.sector[0]][this.sector[1]].push(this)
+		}
 		push()
 		noStroke()
 		textAlign(CENTER)
@@ -16,14 +24,5 @@ function Food (x,y){
 		ellipse(this.x,this.y, this.size, this.size)
 		pop()
 	}
-	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-	
-	this.isInside = function(dimensions){
-		if(this.x >= dimensions[0] && this.x < dimensions[1] && this.y >= dimensions[2] && this.y < dimensions[3]){
-			return true
-		}else{
-			return false
-		}
-	}
 }
