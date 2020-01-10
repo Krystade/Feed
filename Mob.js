@@ -9,8 +9,8 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	this.minSize = size
 	this.xSpeed = .0001//random(-4, 3)
 	this.ySpeed = .0001//random(-4, 3)
-	//this.baseSpeed = random(1, 5)
-	this.baseSpeed = (300/this.minSize) + 18 + random(0,3)
+	this.speedGene = random(0,3)
+	this.baseSpeed = (1500 - this.size)*.05 + this.speedGene
 	this.maxXSpeed = this.baseSpeed
 	this.maxYSpeed = this.baseSpeed
 	
@@ -73,9 +73,11 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		if (this.frames >= 15){
 			this.frames = 0
 		}
-		/*this.baseSpeed = (300/this.minSize) + 20
-		this.maxXSpeed = this.baseSpeed
-		this.maxYSpeed = this.baseSpeed*/
+		if(this.size < this.maxSize){
+			this.baseSpeed = (1500 - this.size)*.02 + this.speedGene
+			this.maxXSpeed = this.baseSpeed
+			this.maxYSpeed = this.baseSpeed
+		}
 		this.move()
 
 		this.display()
@@ -94,10 +96,10 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			secY = this.sector[1]
 			sectors[secX][secY].push(this)
 			// Check if the previous sector the mob was in was valid and if so
-			// Loop through the sector that the mob is in and remove it from the array when found
+			// Loop through the sector that the mob was in and remove it from the array when found
 			if(this.prevSector[0] != -1 && this.prevSector[1] != -1){
 				for(var j = 0; j < sectors[this.prevSector[0]][this.prevSector[1]].length; j++){
-					if(this == entities[j]){
+					if(this == sectors[this.prevSector[0]][this.prevSector[1]][j]){
 						sectors[this.prevSector[0]][this.prevSector[1]].splice(j,1)
 						//print("moved from " + this.prevSector + " to " + this.sector)
 						break
@@ -295,6 +297,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			child.generation = other.generation + 1
 		}
 		child.litterSize = mutate(rand[round(random(0,1))].litterSize, [1, int(8 + this.litterSize*.2)])
+		child.speedGene = mutate(rand[round(random(0,1))].speedGene, [1, 3 + this.speedGene*.2])
 		child.tree = this.tree
 		child.tree.push([this, other])
 		entities.push(child)
