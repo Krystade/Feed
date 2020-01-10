@@ -35,32 +35,29 @@ function Menu (x, y) {
 	healthiestButton.size(85,20)
 	healthiestButton.position(menuButton.x + 98, menuButton.y + 40)
 	healthiestButton.mousePressed(highlightHealthiest)
-	//Follow Oldest Mob	
-	oldestButton = createButton('Oldest')
-	oldestButton.size(85,20)
-	oldestButton.position(menuButton.x + 98, menuButton.y + 70)
-	oldestButton.mousePressed(highlightOldest)
-	// Follow the mob at the next index
-	nextMobButton = createButton('Next Mob')
-	nextMobButton.size(85,20)
-	nextMobButton.position(menuButton.x + 98, menuButton.y + 100)
-	nextMobButton.mousePressed(highlightNext)
 	
 	smallestMobButton = createButton('Smallest')
 	smallestMobButton.size(85,20)
-	smallestMobButton.position(menuButton.x + 188, menuButton.y + 40)
+	smallestMobButton.position(menuButton.x + 98, menuButton.y + 70)
 	smallestMobButton.mousePressed(highlightSmallest)
 	
 	largestMobButton = createButton('Largest')
 	largestMobButton.size(85,20)
-	largestMobButton.position(menuButton.x + 188, menuButton.y + 40 + 30)
+	largestMobButton.position(menuButton.x + 98, menuButton.y + 100)
 	largestMobButton.mousePressed(highlightLargest)
 	
-	b3 = createButton('Prev Mob')
+	b1 = createButton('1')
+	b1.size(85,20)
+	b1.position(menuButton.x + 188, menuButton.y + 40)
+	//b1.mousePressed(highlightNext)
+	b2 = createButton('2')
+	b2.size(85,20)
+	b2.position(menuButton.x + 188, menuButton.y + 40 + 30)
+	//b1.mousePressed(highlightNext)
+	b3 = createButton('3')
 	b3.size(85,20)
 	b3.position(menuButton.x + 188, menuButton.y + 40 + 30*2)
-	b3.mousePressed(highlightPrev)//bPlaceHolder)
-
+	//b3.mousePressed(highlightPrev)
 	
 	
 	// Select click mode 
@@ -127,7 +124,7 @@ function Menu (x, y) {
 	foodConfirm.mousePressed(createFood)
 	
 	// All buttons and inputs in an array for easy hiding/showing
-	buttons = [ungroupButton, clearMobsButton, clearFoodButton, oldestButton, healthiestButton, nextMobButton, largestMobButton, smallestMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm, b3]
+	buttons = [ungroupButton, clearMobsButton, clearFoodButton, healthiestButton, largestMobButton, smallestMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm, b1, b2, b3]
 	
 	// Default values for all menu items
 	clickRadio.value('Place')
@@ -274,50 +271,6 @@ function highlightOldest(){
 		highlightedMob.highlighted = false
 	}
 	highlightedMob = oldest
-	highlightedMob.highlighted = true
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function highlightNext(){
-	var index = 0
-	for(var i = 0; i < entities.length; i++){
-		if(entities[i] == highlightedMob){
-			if(i == entities.length - 1){
-				index = 0
-			   		
-			}else{
-				index = i+1
-			}
-			break
-		}
-	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = entities[index]
-	highlightedMob.highlighted = true
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function highlightPrev(){
-	var index = entities.length-1
-	for(var i = 0; i < entities.length; i++){
-		if(entities[i] == highlightedMob){
-			if(i == 0){
-				index = entities.length-1
-			   		
-			}else{
-				index = i-1
-			}
-			break
-		}
-	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = entities[index]
 	highlightedMob.highlighted = true
 }
 
