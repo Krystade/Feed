@@ -75,12 +75,45 @@ function setup() {
 	
 	// Put the camera near the center of the spawning area
 	trans = [-aWidth/2, -aHeight/2]
+	
+	prevMobButton = createButton('Prev Mob')
+	prevMobButton.size(85,20)
+	prevMobButton.position(windowWidth/2 - 90, windowHeight - 30)
+	prevMobButton.mousePressed(highlightPrev)//bPlaceHolder)
+	// Follow the mob at the next index
+	nextMobButton = createButton('Next Mob')
+	nextMobButton.size(85,20)
+	nextMobButton.position(windowWidth/2 + 5, windowHeight - 30)
+	nextMobButton.mousePressed(highlightNext)
 }
 
 function draw() {
 	// Every 10 minutes display average stats
 	if(frameCount%(10*60*fr) == 0){
 		print(displayAvgStats())
+		
+		// Clearing out any ghost foods. Any food not in foods but still in sectors
+		// Loop through each entity in each sector
+		for(var i = 0; i < sectors.length; i++){
+			for(var j = 0; j < sectors[i].length; j++){
+				for(var k = 0; k < sectors[i][j].length; k++){
+					if(sectors[i][j][k].food){
+						// Compare all foods in foods[] to find a match
+						var found = false
+						for(var l = 0; l < foods.length; l++){
+							if(foods[l].x == sectors[i][j][k].x && foods[l].y == sectors[i][j][k].y){
+								found = true
+								break
+							}
+						}
+						// If the food isnt in foods, remove it form sectors
+						if(!found){
+							sectors[i][j].splice(k,1)
+						}
+					}
+				}
+			}
+		}
 	}
 	// Number to scale the canvas by
 	scaleNum = Math.pow(10, zoom)
@@ -89,29 +122,45 @@ function draw() {
 	MouseYScale = mouseY * (1/scaleNum) - trans[1]
 	// Move all entities right simulating the view moving left
 	if (keyIsDown(LEFT_ARROW)){
-		trans[0] += 1250
+		trans[0] += 700
 	}	
 	// Move view up
 	if (keyIsDown(UP_ARROW)){
-		trans[1] += 1250
+		trans[1] += 700
 	}
 	// Move view right
 	if (keyIsDown(RIGHT_ARROW)){
-		trans[0] -= 125
+		trans[0] -= 700
 	}
 	// Move view down
 	if (keyIsDown(DOWN_ARROW)){
-		trans[1] -= 125
+		trans[1] -= 700
 	}
 	if(!paused){
 		push()
 		// Set the background color
 		background(bground)
-		// sScale and translate all entities to simulate zooming and moving
+		// Scale and translate all entities to simulate zooming and moving
 		scale(scaleNum)
 		translate(trans[0], trans[1])
-
-
+		
+		/*Drawing Sector Borders*//*
+		push()
+		strokeWeight(20)
+		stroke(0,0,0,50)
+		for(var i = 0; i <= aWidth; i += sectorSize){
+			push()
+			if(i/sectorSize%5 == 0){
+				stroke(250, 80, 130)
+			}
+			line(i, 0, i, aHeight)
+			pop()
+		}
+		for(var i = 0; i <= aHeight; i += sectorSize){
+			line(0, i, aWidth, i)
+		}
+		pop()
+		*/
 
 		//Detect if the mouse is being held down to make a mob every 3 frames
 		if (mouseIsPressed){
@@ -191,23 +240,6 @@ function draw() {
 		}else{
 		//Don't spawn food if food rate is 0 or negative
 		}
-		// Reset the sector array and fill it with empty arrays
-	/*	sectors = []
-		// Fill sectors with empty arrays
-		// Number of sectors wide
-		for(var i = 0; i < aWidth/sectorSize; i++){
-			sectors.push([])
-			// Number of sectors tall
-			for(var j = 0; j < aHeight/sectorSize; j++){
-				sectors[i].push([])
-			}
-		}
-		*/
-		/*
-		sectors = 	[0,0],[1,0],[2,0]
-					[0,1],[1,1],[2,1]
-					[0,2],[2,1],[2,2]
-		*/
 		//Display food and place it in the right sector
 		for(var i = 0; i < foods.length; i++){
 			foods[i].display()
@@ -395,6 +427,50 @@ function draw() {
 		*/
 	}
 }
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightPrev(){
+	var index = entities.length-1
+	for(var i = 0; i < entities.length; i++){
+		if(entities[i] == highlightedMob){
+			if(i == 0){
+				index = entities.length-1
+			   		
+			}else{
+				index = i-1
+			}
+			break
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entities[index]
+	highlightedMob.highlighted = true
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightNext(){
+	var index = 0
+	for(var i = 0; i < entities.length; i++){
+		if(entities[i] == highlightedMob){
+			if(i == entities.length - 1){
+				index = 0
+			   		
+			}else{
+				index = i+1
+			}
+			break
+		}
+	}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entities[index]
+	highlightedMob.highlighted = true
+}
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 	function calcSector(x, y){
@@ -518,6 +594,8 @@ function menuPressed(){
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight)
 	stats = new Stats(windowWidth - 260, 80, 240, 300)
+	nextMobButton.position(windowWidth/2 + 5, windowHeight - 30)
+	prevMobButton.position(windowWidth/2 - 90, windowHeight - 30)
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
