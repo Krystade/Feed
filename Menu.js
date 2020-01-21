@@ -53,7 +53,7 @@ function Menu (x, y) {
 	b2 = createButton('2')
 	b2.size(85,20)
 	b2.position(menuButton.x + 188, menuButton.y + 40 + 30)
-	//b1.mousePressed(highlightNext)
+	b1.mousePressed(highlightOldest)
 	b3 = createButton('3')
 	b3.size(85,20)
 	b3.position(menuButton.x + 188, menuButton.y + 40 + 30*2)
@@ -250,67 +250,71 @@ function clearFoods(){
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlightHealthiest(){
-	var healthiest = entities[0]
-	for(var i = 1; i < entities.length; i++){
-		if(entities[i].lifeSpan > healthiest.lifeSpan){
-			healthiest = entities[i]
+	if(entities.length > 0){
+		var healthiest = entities[0]
+		for(var i = 1; i < entities.length; i++){
+			if(entities[i].lifeSpan > healthiest.lifeSpan){
+				healthiest = entities[i]
+			}
 		}
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = healthiest
+		highlightedMob.highlighted = true
 	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = healthiest
-	highlightedMob.highlighted = true
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlightOldest(){
-	var oldest = entities[0]
-	if(highlightedMob){
-		highlightedMob.highlighted = false
+	if(entities.length > 0){
+		var oldest = entities[0]
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = oldest
+		highlightedMob.highlighted = true
 	}
-	highlightedMob = oldest
-	highlightedMob.highlighted = true
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlightSmallest(){
-	var smallest = entities[0]
-	for(var i = 1; i < entities.length; i++){
-		if(entities[i].size < smallest.size){
-			smallest = entities[i]
+	if(entities.length > 0){
+		var smallest = entities[0]
+		for(var i = 1; i < entities.length; i++){
+			if(entities[i].size < smallest.size){
+				smallest = entities[i]
+			}
 		}
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = smallest
+		highlightedMob.highlighted = true
 	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = smallest
-	highlightedMob.highlighted = true
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlightLargest(){
-	var largest = entities[0]
-	for(var i = 1; i < entities.length; i++){
-		if(entities[i].size > largest.size){
-			largest = entities[i]
+	if(entities.length > 0){
+		var largest = entities[0]
+		for(var i = 1; i < entities.length; i++){
+			if(entities[i].size > largest.size){
+				largest = entities[i]
+			}
 		}
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = largest
+		highlightedMob.highlighted = true
 	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
-	}
-	highlightedMob = largest
-	highlightedMob.highlighted = true
 }
 
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function bPlaceHolder(){
-	//Placeholder for the function that pressing button 3 will activate
-}
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
