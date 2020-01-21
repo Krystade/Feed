@@ -32,7 +32,10 @@ var mouseSector = [0, 0]
 var mouseXScale = 0
 var MouseYScale = 0
 
+// The minimum amount of life before searching for a mate
+var matingLifespanThreshold = 30
 var highlightedMob
+var currentId = 0000
 
 function setup() {
 	createCanvas(windowWidth, windowHeight)
@@ -44,6 +47,8 @@ function setup() {
 	bground = color(210, 220, 235)
 	// The range of sizes that mobs are spawned in
 	sizeRange = [10, 160]
+	// Variable to control how frequent mutations are. Value between 0 and 1, 1 being 100% rate to mutate
+	mutationRate = .7
 	
 	// Fill sectors with empty arrays
 		// Number of sectors wide
@@ -62,7 +67,7 @@ function setup() {
 		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(sizeRange[0], sizeRange[1]), /*life*/random(8, 14)))
 	}
 	
-	for(var i = 0; i < 250; i++){
+	for(var i = 0; i < 500; i++){
 		foods.push(new Food(ceil(random(30, aWidth)), ceil(random(30, aHeight))))
 	}
 	
@@ -70,20 +75,20 @@ function setup() {
 	menu = new Menu(15, 80)
 	var highlightedMob = undefined
 	
-	stats = new Stats(windowWidth - 260, 80, 240, 300)
+	stats = new Stats(windowWidth - 260, 20, 240, 300)
 	print(displayAvgStats())
 	
 	// Put the camera near the center of the spawning area
-	trans = [-aWidth/2, -aHeight/2]
+	//trans = [-aWidth/2, -aHeight/2]
 	
 	prevMobButton = createButton('Prev Mob')
-	prevMobButton.size(85,20)
-	prevMobButton.position(windowWidth/2 - 90, windowHeight - 30)
+	prevMobButton.size(125,40)
+	prevMobButton.position(windowWidth/2 - 130, windowHeight - 50)
 	prevMobButton.mousePressed(highlightPrev)//bPlaceHolder)
 	// Follow the mob at the next index
 	nextMobButton = createButton('Next Mob')
-	nextMobButton.size(85,20)
-	nextMobButton.position(windowWidth/2 + 5, windowHeight - 30)
+	nextMobButton.size(125,40)
+	nextMobButton.position(windowWidth/2 + 5, windowHeight - 50)
 	nextMobButton.mousePressed(highlightNext)
 }
 
@@ -91,36 +96,12 @@ function draw() {
 	// Every 10 minutes display average stats
 	if(frameCount%(10*60*fr) == 0){
 		print(displayAvgStats())
-		
-		// Clearing out any ghost foods. Any food not in foods but still in sectors
-		// Loop through each entity in each sector
-		for(var i = 0; i < sectors.length; i++){
-			for(var j = 0; j < sectors[i].length; j++){
-				for(var k = 0; k < sectors[i][j].length; k++){
-					if(sectors[i][j][k].food){
-						// Compare all foods in foods[] to find a match
-						var found = false
-						for(var l = 0; l < foods.length; l++){
-							if(foods[l].x == sectors[i][j][k].x && foods[l].y == sectors[i][j][k].y){
-								found = true
-								break
-							}
-						}
-						// If the food isnt in foods, remove it form sectors
-						if(!found){
-							sectors[i][j].splice(k,1)
-						}
-					}
-				}
-			}
-		}
 	}
 	// Number to scale the canvas by
 	scaleNum = Math.pow(10, zoom)
 	// The mouse position on the map not the screen
 	mouseXScale = mouseX * (1/scaleNum) - trans[0]
 	MouseYScale = mouseY * (1/scaleNum) - trans[1]
-	// Move all entities right simulating the view moving left
 	if (keyIsDown(LEFT_ARROW)){
 		trans[0] += 700
 	}	
@@ -144,8 +125,9 @@ function draw() {
 		scale(scaleNum)
 		translate(trans[0], trans[1])
 		
-		/*Drawing Sector Borders*//*
-		push()
+		/*Drawing Sector Borders*/
+		/*Used for Debugging*/
+		/*push()
 		strokeWeight(20)
 		stroke(0,0,0,50)
 		for(var i = 0; i <= aWidth; i += sectorSize){
@@ -159,8 +141,7 @@ function draw() {
 		for(var i = 0; i <= aHeight; i += sectorSize){
 			line(0, i, aWidth, i)
 		}
-		pop()
-		*/
+		pop()*/
 
 		//Detect if the mouse is being held down to make a mob every 3 frames
 		if (mouseIsPressed){
@@ -180,22 +161,16 @@ function draw() {
 						}
 						break
 					case "Delete":
-				for(var i = 0; i < entities.length; i++){
-					if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
-						// Loop through the sector array that the entity is and remove it
-						secX = entities[i].sector[0]
-						secY = entities[i].sector[1]
-						for(var j = 0; j < sectors[secX][secY].length; j++){
-							if(sectors[secX][secY][j] == entities[i]){
-								sectors[secX][secY].splice(j,1)
-								break
+						for(var i = 0; i < entities.length; i++){
+							if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+								print("Clicked on ", entities[i])
+								// Remove the mob from sectors
+								sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
+								// Remove the mob from entities
+								entities.splice(i,1)
+								i--;
 							}
 						}
-						print("Clicked on ", entities[i])
-						entities.splice(i,1)
-						i--;
-					}
-				}
 						break
 					case "Select":
 						for(var i = entities.length - 1; i >= 0; i--){
@@ -240,32 +215,22 @@ function draw() {
 		}else{
 		//Don't spawn food if food rate is 0 or negative
 		}
-		//Display food and place it in the right sector
+		//Display food
 		for(var i = 0; i < foods.length; i++){
 			foods[i].display()
 		}
 		// Clear out the colors array to refill them with new values
 		colors = []
 		for(var i = 0; i < entities.length; i++){
-			// Remove dead mobs from sectors[]
+			// Remove dead entities
 			if(entities[i].lifeSpan <= 0){
-				secX = entities[i].sector[0]
-				secY = entities[i].sector[1]
-				// Loop through the sector that the mob is in and remove it from the array when found
-				for(var j = 0; j < sectors[secX][secY].length; j++){
-					if(entities[i] == sectors[secX][secY][j]){
-						sectors[secX][secY].splice(j,1)
-						break
-					}
-				}
-				// Remove dead mobs from entities[]
-				if(i == 0){
-					entities.shift()
-				}else{
-					entities.splice(i, 1)
+				// Remove the mob from sectors
+				sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
+				// Remove the mob from entities
+				entities.splice(i, 1)
+				if(i != 0){
 					i--
-				}
-				
+				}else{}
 			}
 			// Make sure the entity is valid
 			if (entities[i]){
@@ -277,8 +242,8 @@ function draw() {
 						entities[i].findTarget()
 					}
 				}else{
-					entities[i].findTarget(entities, foods)
-				}				
+					entities[i].findTarget()
+				}
 				
 				// Have the camera follow highlighted mob
 				if(typeof(highlightedMob) != "undefined"){
@@ -294,36 +259,22 @@ function draw() {
 				//Check if the mob exists and if it is within range of food
 					if(foods[j]){
 						if(entities[i].eats(foods[j])){
-							//If it does, remove the food and lengthen the mob's life
+							//If it does lengthen the mob's life
 							entities[i].lifeSpan += foods[j].value
-							
-							secX = foods[j].sector[0]
-							secY = foods[j].sector[1]
-							// Loop through the sector that the food is in and remove it from the array when found
-							for(var k = 0; k < sectors[secX][secY].length; k++){
-								if(foods[j] == sectors[secX][secY][k]){
-									sectors[secX][secY].splice(k,1)
-									break
-								}
-							}
-							if(j == 0){
-								foods.shift()
+							pos = findInSectors(foods[j])
+							// And remove the food from foods and sectors
+							if(pos == -1){
 							}else{
+								sectors[pos[0]][pos[1]].splice(pos[2], 1)
 								foods.splice(j, 1)
-								j--
+								if(j != 0){
+									j--
+								}
 							}
 						}
 					}
 				}
-				//Keep track of breed ability as time goes on
-				/*if (entities[i].breedCoolDown > 0){
-					entities[i].breedCoolDown -= 1
-				}else{
-					entities[i].canBreed = true
-				}*/
-				if(entities[i].breedNeed > entities[i].feedNeed){
-					entities[i].canBreed = true
-				}
+				
 				// Checking if the entities color is already in the list
 				// If it is add to the count
 				// If it is not add the color to the list
@@ -341,7 +292,6 @@ function draw() {
 				}
 			}
 		}
-		mouseSector = calcSector(mouseXScale, MouseYScale)
 		
 		// Find which colors have the most circles
 		temp = []
@@ -396,7 +346,7 @@ function draw() {
 		text("Population: " + entities.length, 20, 65)
 		//Instructions
 		textAlign(CENTER)
-		text("Hold mouse button for rapid click", windowWidth / 2, 25)
+		text("Hold mouse button for rapid click", windowWidth / 2, 20)
 		//Growth Rate
 		fill(35, 224, 67)
 		strokeWeight(1.5)
@@ -416,64 +366,83 @@ function draw() {
 		text(str(round(frameRate())), windowWidth - 30, 25)
 		textSize(15)
 		
-/* Debugging *//*
-		// Display the sector the mouse is in
-		text("Sector: " + mouseSector, mouseX, mouseY - 35)
+/* Debugging */
 		// Display the x and y position of the mouse in the area
-		text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
+		//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 		// Display the x and y position of the mouse in the screen
-		text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+		//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
 		pop()
-		*/
 	}
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlightPrev(){
-	var index = entities.length-1
-	for(var i = 0; i < entities.length; i++){
-		if(entities[i] == highlightedMob){
-			if(i == 0){
-				index = entities.length-1
-			   		
-			}else{
-				index = i-1
+	debug = false
+	if(debug){
+		start = millis()
+	}
+	if(entities.length > 0){
+		var index = entities.length-1
+		for(var i = 0; i < entities.length; i++){
+			if(entities[i] == highlightedMob){
+				if(i == 0){
+					index = entities.length-1
+
+				}else{
+					index = i-1
+				}
+				break
 			}
-			break
 		}
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = entities[index]
+		highlightedMob.highlighted = true
 	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
+	if(debug){
+		print("Startup took " + (millis() - start) + "ms")
 	}
-	highlightedMob = entities[index]
-	highlightedMob.highlighted = true
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlightNext(){
-	var index = 0
-	for(var i = 0; i < entities.length; i++){
-		if(entities[i] == highlightedMob){
-			if(i == entities.length - 1){
-				index = 0
-			   		
-			}else{
-				index = i+1
+	debug = false
+	if(debug){
+		start = millis()
+	}
+	if(entities.length > 0){
+		var index = 0
+		for(var i = 0; i < entities.length; i++){
+			if(entities[i] == highlightedMob){
+				if(i == entities.length - 1){
+					index = 0
+
+				}else{
+					index = i+1
+				}
+				break
 			}
-			break
 		}
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = entities[index]
+		highlightedMob.highlighted = true
 	}
-	if(highlightedMob){
-		highlightedMob.highlighted = false
+	if(debug){
+		print("highlightNext took " + (millis() - start) + "ms")
 	}
-	highlightedMob = entities[index]
-	highlightedMob.highlighted = true
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 	function calcSector(x, y){
+	debug = false
+		if(debug){
+			start = millis()
+		}
 		// Which column
 		sectorX = int(x/(sectorSize))
 		// Which Row
@@ -495,22 +464,30 @@ function highlightNext(){
 		
 		sector = [sectorX, sectorY]
 		return sector
+		if(debug){
+		print("calcSector took " + (millis() - start) + "ms")
+	}
 	} 
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 // Currently only used in changing mutating color, range will be from 0-255 for food but likely 0 - 1000 for other genes when implemented
 function mutate(gene, range){
+	debug = false
+	if(debug){
+		start = millis()
+	}
 	rand = random()
 	min = range[0]
 	max = range[1]
-	if(rand < .5){
+	// %20 of the time
+	if(rand > .8){
 		// Don't mutate 
-	}else if(rand < .8){
+	}else if(rand > 1 - mutationRate){
 		//Subtracting .5 so the random number is from -.5 to +.5
 		// 10% max increase or decrease of max
 		gene += (random() - .5)*max/5
-	}else if(rand < .99){
+	}else if(rand > 1 - mutationRate - .19){
 		// 20% max increase or decrease of max
 		gene += (random() - .5)*max/2.5
 	}else{
@@ -522,6 +499,9 @@ function mutate(gene, range){
 	}else if(gene < min){
 		gene = min
 	}*/
+	if(debug){
+		print("mutate took " + (millis() - start) + "ms")
+	}
 	return gene
 }
 
@@ -531,6 +511,36 @@ function mutate(gene, range){
 function compareRgb(color1, color2){
 	return deltaE(rgb2lab(color1), rgb2lab(color2))
 }
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+// Searches a one dimensional array and returns the index of the item
+function find(arr, item){
+	for(var i = 0; i < arr.length; i++){
+		if(arr[i] == item){
+			return i
+		}
+	}
+	// Returns -1 if the item is not found
+	return -1
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+// Searches a one dimensional array and returns the indices of the item in sectors arr = [i, j, k] -> sectors[arr[0]][arr[1]][arr[2]]
+function findInSectors(item){
+	for(var i = 0; i < sectors.length; i++){
+		for(var j = 0; j < sectors[i].length; j++){
+			if(find(sectors[i][j], item) != -1){
+				return [i,j,find(sectors[i][j], item)]
+			}
+		}
+	}
+	// Returns -1 if the item is not found
+	return -1
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function highlight(entity){
 	if(typeof(highlightedMob) != "undefined"){
@@ -542,6 +552,10 @@ function highlight(entity){
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function displayAvgStats(){
+	debug = false
+	if(debug){
+		start = millis()
+	}
 	avgLifespan = 0
 	avgMaxSize = 0
 	avgMinSize = 0
@@ -565,16 +579,28 @@ function displayAvgStats(){
 			minGeneration = entities[i].generation
 		}else{}
 	}
-	
+	if(debug){
+		print("displayAvgStats took " + (millis() - start) + "ms")
+	}
 	/*print*/return("\nTime: " + getTime() + "\nPopulation: " + entities.length + "\nAverage Lifespan: " + avgLifespan + "\nAverage Max Size: " + avgMaxSize + "\nAverage Min Size: " + avgMinSize + "\nAverage Max Speed: " + avgMaxSpeed + "\nAverage Feed Need: " + avgFeedNeed + "\nAverage # of Children: " + avgChildren +"\nMin Generation: " + minGeneration + "\nMax Generation: " + maxGeneration + "\nAverage Generation: " + avgGeneration)
+	
 }
 
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
 function getTime(){
+	debug = false
+	if(debug){
+		start = millis()
+	}
 	time = (frameCount) / fr
 	hours = floor(time/60/60)
 	minutes = floor(time/60 - hours*60)
 	seconds = floor(time - minutes*60 - hours*60*60)
 	
+	if(debug){
+		print("getTime took " + (millis() - start) + "ms")
+	}
 	return(hours + ":" + nf(minutes, 2) + ":" + nf(seconds,2))
 	
 }
@@ -593,15 +619,21 @@ function menuPressed(){
 
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight)
-	stats = new Stats(windowWidth - 260, 80, 240, 300)
-	nextMobButton.position(windowWidth/2 + 5, windowHeight - 30)
-	prevMobButton.position(windowWidth/2 - 90, windowHeight - 30)
+	stats = new Stats(windowWidth - 260, 20, 240, 300)
+	nextMobButton.position(windowWidth/2 + 5, windowHeight - 50)
+	prevMobButton.position(windowWidth/2 - 130, windowHeight - 50)
 }
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function mousePressed() {
+	debug = false
+	if(debug){
+		start = millis()
+	}
+	// Dimensions of next and prev mob buttons
+	if(mouseX > windowWidth/2 - 130 && mouseX < windowWidth/2 + 130 && mouseY < windowHeight - 10 && mouseY > windowHeight - 50){
 	//Dimensions of menu button
-	if(mouseX < 65 && mouseX > 15 &&
+	}else if(mouseX < 65 && mouseX > 15 &&
 	   mouseY < 100 && mouseY > 80){
 		// Prevent any spawning/deleting/selecting
 		
@@ -648,6 +680,9 @@ function mousePressed() {
 							}
 						}
 						print("Clicked on ", entities[i])
+						// Remove the mob from sectors
+						sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
+						// Remove the mob from entities
 						entities.splice(i,1)
 						i--;
 					}
@@ -677,6 +712,9 @@ function mousePressed() {
 				}
 				break		
 		}
+	}
+	if(debug){
+		print("mousePressed took " + (millis() - start) + "ms")
 	}
 }
 
@@ -718,11 +756,17 @@ function average(value1, value2){
 	return((value1 + value2)/2)
 }
 
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
 // the following functions are based off of the pseudocode
 // found on www.easyrgb.com
 // I took this code from https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
 function rgb2lab(rgb){
+	debug = false
+	if(debug){
+		start = millis()
+	}
   var r = rgb[0] / 255, 
       g = rgb[1] / 255, 
       b = rgb[2] / 255, 
@@ -739,7 +783,9 @@ function rgb2lab(rgb){
   x = (x > 0.008856) ? Math.pow(x, 1/3) : (7.787 * x) + 16/116;
   y = (y > 0.008856) ? Math.pow(y, 1/3) : (7.787 * y) + 16/116;
   z = (z > 0.008856) ? Math.pow(z, 1/3) : (7.787 * z) + 16/116;
-
+	if(debug){
+		print("rgb2lab took " + (millis() - start) + "ms")
+	}
   return [(116 * y) - 16, 500 * (x - y), 200 * (y - z)]
 }
 
@@ -747,6 +793,10 @@ function rgb2lab(rgb){
 // https://github.com/THEjoezack/ColorMine/blob/master/ColorMine/ColorSpaces/Comparisons/Cie94Comparison.cs
 
 function deltaE(labA, labB){
+	debug = false
+	if(debug){
+		start = millis()
+	}
   var deltaL = labA[0] - labB[0];
   var deltaA = labA[1] - labB[1];
   var deltaB = labA[2] - labB[2];
@@ -761,6 +811,8 @@ function deltaE(labA, labB){
   var deltaCkcsc = deltaC / (sc);
   var deltaHkhsh = deltaH / (sh);
   var i = deltaLKlsl * deltaLKlsl + deltaCkcsc * deltaCkcsc + deltaHkhsh * deltaHkhsh;
+	if(debug){
+		print("deltaE took " + (millis() - start) + "ms")
+	}
   return i < 0 ? 0 : Math.sqrt(i);
 }
-
