@@ -35,13 +35,20 @@ function Stats(x, y, w, h){
 			text("Size: " + round(entities[mobIndex].size), this.x + 5, this.y + offset*3)
 			text("Min Size: " + round(entities[mobIndex].minSize), this.x + 5, this.y + offset*4)
 			text("Max Size: " + round(entities[mobIndex].maxSize), this.x + 5, this.y + offset*5)
-			text("Max Speed: " + round(entities[mobIndex].maxXSpeed), this.x + 5, this.y + offset*6)
-			text("Color: RGB(" + entities[mobIndex].r + "," + entities[mobIndex].g + "," + entities[mobIndex].b + ")", this.x + 5, this.y + offset*7)
+			// a^2 + b^2 = c^2
+			s = sqrt(entities[mobIndex].xSpeed * entities[mobIndex].xSpeed + entities[mobIndex].ySpeed * entities[mobIndex].ySpeed)
+			text("Speed: " + round(s), this.x + 5, this.y + offset*6)
+			text("Max Speed: " + round(entities[mobIndex].maxSpeed), this.x + 5, this.y + offset*7)
 			text("Feed Need: " + round(entities[mobIndex].feedNeed), this.x + 5, this.y + offset*8)
 			text("Breed Need: " +  round(entities[mobIndex].breedNeed), this.x + 5, this.y + offset*9)
 			text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + offset*10)
 			text("Number of Children: " + entities[mobIndex].numChildren, this.x + 5, this.y + offset*11)
-			text("Sector: [" + entities[mobIndex].sector + "]", this.x + 5, this.y + offset*12)
+			text("Color: RGB(" + entities[mobIndex].r + "," + entities[mobIndex].g + "," + entities[mobIndex].b + ")", this.x + 5, this.y + offset*12)
+			text("Sector: [" + entities[mobIndex].sector + "]", this.x + 5, this.y + offset*13)
+			text("Speed Gene: " + nf(entities[mobIndex].speedGene, 1,2), this.x + 5, this.y + offset*14)
+			text("Created: " + entities[mobIndex].created, this.x + 5, this.y + offset*15)
+			text("Max Litter: " + entities[mobIndex].litterSize, this.x + 5, this.y + offset*16)
+			text("ID: " + entities[mobIndex].id, this.x + 5, this.y + offset*17)
 			//text("Position: (" + this.x + ", " + this.y + ")" , this.x + 5, this.y + offset*13)
 			
 		
