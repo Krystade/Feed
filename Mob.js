@@ -4,21 +4,31 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//Location and Speed
 	this.x = x
 	this.y = y
+	// Current size of the mob
 	this.size = size
+	// Max size the mob will be
 	this.maxSize = size * 4
+	// Starting size, Minimum size the mob will be
 	this.minSize = size
 	this.xSpeed = .0001//random(-4, 3)
 	this.ySpeed = .0001//random(-4, 3)
+	this.speed = sqrt(this.xSpeed * this.xSpeed + this.ySpeed * this.ySpeed)
 	this.speedGene = random(0,3)
 	this.baseSpeed = (1500 - this.size)*.05 + this.speedGene
 	this.maxXSpeed = this.baseSpeed
 	this.maxYSpeed = this.baseSpeed
+	this.maxSpeed = sqrt(this.maxXSpeed * this.maxXSpeed + this.maxYSpeed * this.maxYSpeed)
 	
 	// Aging and Growth
 	this.frames = ceil(random(0, 10))
 	this.lifeSpan = lifeSpan
 	// Time when mob was created
 	this.created = getTime()
+	// How old the mob is in frames
+	this.age = 0
+	// Id of mob created
+	this.id = currentId
+	currentId++
 	// How quickly they grow
 	this.growth = 2 * growthRate
 	
@@ -31,7 +41,10 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	this.breedNeed = 0
 	// Cap number of offspring created at once to 5
 	this.maxBreedNeed = this.feedNeed * this.litterSize
+	// If the mob is ready to breed
 	this.canBreed = false
+	// If the mob has enough life to search for a mate
+	this.canSearch = false
 	// How many generations in the mob is
 	this.generation = 0
 	// Array of all ancestors
@@ -41,11 +54,11 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	// Cooldown is 30 seconds
 	//this.breedCoolDown = fr * 30
 	
+	this.visionRange = 2
 	
 	this.highlighted = false
 	this.prevSector = [-1, -1]
 	this.sector = [0,0]
-	this.sectorsAdj = []
 	this.target = undefined
 	
 	//Color
@@ -73,14 +86,25 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		if (this.frames >= 15){
 			this.frames = 0
 		}
+		// Mob ages every frame
+		this.age++
+		// Update base and max speeds
 		if(this.size < this.maxSize){
 			this.baseSpeed = (1500 - this.size)*.02 + this.speedGene
 			this.maxXSpeed = this.baseSpeed
 			this.maxYSpeed = this.baseSpeed
 		}
+		// Check if breed cooldown has completed before being able to breed
+		if(this.breedNeed > this.feedNeed){
+			this.canBreed = true
+		}
+		// Move the mob
 		this.move()
-
-		this.display()
+		
+		// Check if the mob is on screen before displaying it
+		if(this.x + this.size/2 > -trans[0] && this.x - this.size/2 < windowWidth/scaleNum - trans[0] && this.y + this.size/2 > -trans[1] && this.y - this.size/2 < windowWidth/scaleNum - trans[1]){
+			this.display()
+		}
 		//this.separate()
 		if(this.maxBreedNeed > this.breedNeed){
 			this.breedNeed++
@@ -107,10 +131,13 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 				}
 			}
 		}
-				// Update entities sector
-				this.prevSector = this.sector
-				// Finding and assigning the entities sector
-				this.sector = calcSector(this.x, this.y)
+		// Need this at the end so newly created mobs get added to the right sector automatically
+		// Update entities sector
+		// Not sure if doing this is a waste or not. Think its the exact same as this.prevSector = this.sector
+		this.prevSector[0] = this.sector[0]
+		this.prevSector[1] = this.sector[1]
+		// Finding and assigning the entities sector
+		this.sector = calcSector(this.x, this.y)
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
@@ -163,60 +190,101 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.move = function(){
+		debug = false
+		if(debug){
+			start = millis()
+		}
 		this.x += this.xSpeed
 		this.y += this.ySpeed
-
-		//Speed Managment
-		//If a mob moves faster than the max pixels a frame in the x direction, slow it down to the max
-		if(this.xSpeed >= this.maxXSpeed || this.xSpeed <= -this.maxXSpeed){
-		   this.xSpeed = this.xSpeed/abs(this.xSpeed) * this.maxXSpeed
-		   }
-		//If a mob moves faster than the max pixels a frame in the y direction, slow it down to 6
-		if (this.ySpeed >= this.maxYSpeed || this.ySpeed <= -this.maxYSpeed){
-			this.ySpeed = this.ySpeed/abs(this.ySpeed) * this.maxYSpeed
-		}
+		
 		// Steer if there is a target or don't move
 		if(typeof(this.target) == "undefined"){
-			this.xSpeed = 0
-			this.ySpeed = 0
+			this.xSpeed = this.xSpeed/1.025
+			this.ySpeed = this.ySpeed/1.025
 			return undefined
 		}else{
+			this.xDir = (this.target.x - this.x)/abs(this.target.x - this.x + .0001)
 			// Steering in the X direction
-			if(this.x + this.size / 2 > this.target.x - this.target.size / 2 || this.x - this.size / 2 < this.target.x + this.target.size / 2){
-				this.xSpeed += -3 * ((1/(this.x - this.target.x + .001)) * abs(this.x - this.target.x))
+			// If the mob is accelerating the same direction it is moving it wont exceed its max x speed by more than 2
+			if(abs(this.xSpeed + (3*this.xDir)) <= this.maxXSpeed){
+				this.xSpeed += 3*this.xDir
 			}else{
-				this.xSpeed += -3 * ((1/(this.x - this.target.x + .001)) * abs(this.x - this.target.x))
 			}
+			this.yDir = (this.target.y - this.y)/abs(this.target.y - this.y + .0001)
 			// Steering in the Y direction
-			if(this.y  + this.size / 2 > this.target.y - this.target.size / 2 || this.y - this.size / 2  < this.target.y + this.target.size / 2){
-				this.ySpeed += -3 * ((1/(this.y - this.target.y + .001)) * abs(this.y - this.target.y))
-			}else{
-				this.ySpeed += -3 * ((1/(this.y - this.target.y + .001)) * abs(this.y - this.target.y))
+			// If the mob is accelerating the same direction it is moving it wont exceed its max y speed by more than 2
+			if(abs(this.ySpeed + (3*this.yDir)) <= this.maxYSpeed){
+				this.ySpeed += 3*this.yDir
 			}
+			// Calculating current speed and max speed
+			this.speed = sqrt(this.xSpeed * this.xSpeed + this.ySpeed * this.ySpeed)
+			// Max speed is changing until the mob is fully grown
+			this.maxSpeed = sqrt(this.maxXSpeed * this.maxXSpeed + this.maxYSpeed * this.maxYSpeed)
+		}
+		if(debug){
+			print("move took " + (millis() - start) + "ms")
 		}
 	}
 	
-	
-	
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-	this.findTarget = function(entityList){
-		if(this.breedNeed > this.feedNeed && this.lifeSpan > 30){
-			if(this.findValidMates(entities).length > 0){
-				this.target = this.findMate(this.findValidMates(entities))
+	this.findTarget = function(){
+		debug = true
+		if(debug){
+			start = millis()
+		}
+		foodList = []
+		mobList = []
+		for(var row = -this.visionRange; row <= this.visionRange; row++){
+			// Make sure not to check any sectors outside of the spawning range
+			if(this.sector[0] + row >=0 && this.sector[0] + row < aWidth/sectorSize){
+				for(var column = -this.visionRange; column <= this.visionRange; column++){
+					// Make sure not to check any sectors outside of the spawning range
+					if(this.sector[1] + column >=0 && this.sector[1] + column < aHeight/sectorSize){
+						for(var i = 0; i < sectors[this.sector[0] + row][this.sector[1] + column].length; i++){
+							if(sectors[this.sector[0] + row][this.sector[1] + column][i].food){
+								foodList.push(sectors[this.sector[0] + row][this.sector[1] + column][i])
+							}else{
+								mobList.push(sectors[this.sector[0] + row][this.sector[1] + column][i])
+							}
+						}
+					}
+				}
+			}
+		}
+		// Only stop the mob from searching if it drops below the threshold
+		if(this.lifeSpan < matingLifespanThreshold){
+			this.canSearch = false
+		// Once it has a decent buffer to allow for travel time, then search for a mate
+		}else if(this.lifeSpan > matingLifespanThreshold + 15){
+			this.canSearch = true
+		}else{}
+		
+		if(this.breedNeed > this.feedNeed && (this.lifeSpan > 45 || this.canSearch)){
+			// Switch entities for mobList to limit breeding to those in vision range
+			if(this.findValidMates(mobList).length > 0){
+				this.target = this.findMate(this.findValidMates(mobList))
 				//print("\n", this, "Targeting", this.target)
 			}else{
 				//this.breedNeed = 0
-				this.target = this.findFood()
+				this.target = this.findFood(foodList)
 			}
 		}else{
-			this.target = this.findFood()
+			this.target = this.findFood(foodList)
+		}
+		if(debug){
+			print("findTarget took " + (millis() - start) + "ms")
 		}
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	// Returns an array of mobs that can be bred with
 	this.findValidMates = function(){
+		debug = false
+		if(debug){
+			start = millis()
+		}
 		var matched = []
 		// Loop through all mobs on the map
 		for(var i = 0; i < entities.length; i++){
@@ -230,50 +298,60 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 		// Return array of all valid mates on map
 		//print("matched: ", matched)
+	if(debug){
+		print("findValidMates took " + (millis() - start) + "ms")
+	}
 		return matched
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.findMate = function(entityList){
-		if(!entityList[0]){
-			// No valid mates
-			print("no valid mates for", this)
-			return undefined
-		}else{
-			var closest = entityList[0]
-			// Compare all the breedable mobs and find the closest one
-			for(var i = 1; i < entityList.length; i++){
-				if(dist(this.x, this.y, entityList[i].x, entityList[i].y) < dist(this.x, this.y, closest.x, closest.y)){
-					closest = entityList[i]
-				}
-			}
-			// Return closest valid mate
-			return (closest)
+		debug = false
+		if(debug){
+			start = millis()
 		}
-		// vv I don't think this ones necessary vv
-		// No valid mates
-		print("no valid mates for", this)
-		return undefined
+		var closest = entityList[0]
+		// Compare all the breedable mobs and find the closest one
+		for(var i = 1; i < entityList.length; i++){
+			if(dist(this.x, this.y, entityList[i].x, entityList[i].y) < dist(this.x, this.y, closest.x, closest.y)){
+				closest = entityList[i]
+			}
+		}
+		// Return closest valid mate
+		if(debug){
+			print("findMate took " + (millis() - start) + "ms")
+		}
+		return (closest)
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-		this.findFood = function(){
-		if(typeof(foods[0]) == "undefined"){
-			return undefined
-		}else{
-			var closest = foods[0]
-			for(var i = 0; i < foods.length; i++){
-				if(dist(this.x, this.y, foods[i].x, foods[i].y) < dist(this.x, this.y, closest.x, closest.y)){
-					closest = foods[i]
-				}
-			}
-			//Return closest food
-		return(closest)
+	this.findFood = function(foodList){
+		debug = false
+		if(debug){
+			start = millis()
 		}
+		if(typeof(foodList[0]) == "undefined"){
+			return undefined
+		}
+		var closest = foodList[0]
+		for(var i = 0; i < foodList.length; i++){
+			if(dist(this.x, this.y, foodList[i].x, foodList[i].y) < dist(this.x, this.y, closest.x, closest.y)){
+				closest = foodList[i]
+			}
+		}
+		//Return closest food
+		if(debug){
+			print("findFood took " + (millis() - start) + "ms")
+		}
+			return(closest)
 	}
 	
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.breed = function(other){
+		debug = false
+		if(debug){
+			start = millis()
+		}
 		this.breedNeed -= this.feedNeed
 		this.canBreed = false
 		//other.breedNeed -= other.feedNeed
@@ -281,14 +359,11 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		childLifespan = this.lifeSpan * .2 + other.lifeSpan * .2
 		var rand = [this, other]
 		childSize = mutate(rand[round(random(0,1))].minSize, [40, 80 + .2*this.minSize])
-		//childMaxSpeed = mutate(rand[round(random(0,1))].maxXSpeed, [8, 40 + .2*this.maxXSpeed])
 		childFeedNeed = mutate(rand[round(random(0,1))].feedNeed, [800, 2000 + .2*this.feedNeed])
 		this.lifeSpan *= .8
 		//other.lifeSpan *= .8
 		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan)
 		
-		//child.maxXSpeed = childMaxSpeed
-		//child.maxYSpeed = childMaxSpeed
 		child.feedNeed = childFeedNeed
 		child.maxBreedNeed = child.feedNeed*5
 		if(this.generation > other.generation){
@@ -297,11 +372,14 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			child.generation = other.generation + 1
 		}
 		child.litterSize = mutate(rand[round(random(0,1))].litterSize, [1, int(8 + this.litterSize*.2)])
-		child.speedGene = mutate(rand[round(random(0,1))].speedGene, [1, 3 + this.speedGene*.2])
+		child.speedGene = mutate(rand[round(random(0,1))].speedGene, [0, 5])
 		child.tree = this.tree
 		child.tree.push([this, other])
 		entities.push(child)
 		this.numChildren += 1
+		if(debug){
+			print("breed took " + (millis() - start) + "ms")
+		}
 	}
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -323,49 +401,6 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			this.size -= this.minSize
 			this.lifeSpan -= this.minSize/this.size * this.lifeSpan
 		}
-
-	}	
-	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-	
-	this.search = function(entities, foods){
-		//There are 8 sectors adjacent to the entity plus the one it is in
-		//Looping through each sector adjacent to the entity
-		for(var i = -1; i < 2; i++){
-			for(var j = -1; j < 2; j++){
-				if(this.sector[1] + i >= 0 && this.sector[1] + i < sectors.length &&
-				   this.sector[0] + j >= 0 && this.sector[0] + j < sectors[0].length){
-					//Then looping through every entity in that sector
-					for(var k = 0; k < sectors[this.sector[1] + i][this.sector[0] + j].length; k++){
-						other = sectors[this.sector[1] + i][this.sector[0] + j][k]
-						//If the entity is a piece of food
-						if(other.food){
-							//Check the distance between the selected mob and the piece of food
-							if (dist(this.x, this.y, other.x, other.y) < dist(this.x, this.y, this.closestFood.x, this.closestFood.y)){
-								//If the distance is shorter than the current closest food change the closest food to this one
-								this.closestFood = {x:other.x, y:other.y}
-							}
-						//Check all the mobs in the same sector and adjacent sectors
-						}else if(other.mob && other != this){
-							//Check to see if the colors are similar
-							if(compareRgb(this.rgb, other.rgb)
-							< 20){
-								//Check the distance between the selected mob and the possible mate
-								if (dist(this.x, this.y, other.x, other.y) < dist(this.x, this.y, this.closestMate.x, this.closestMate.y)){
-									//If the distance is shorter than the current closest mate, change the closest mate to this one
-									this.closestMate = other
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		/*push()
-		stroke(30,200,80)
-		line(this.x, this.y, this.closestFood.x, this.closestFood.y)
-		stroke(400, 70, 80)		
-		line(this.x, this.y, this.closestMate.x, this.closestMate.y)
-		pop()*/
 	}
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 }
