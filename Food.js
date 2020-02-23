@@ -12,7 +12,7 @@ function Food (x,y){
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.display = function(){
-		// Check if the food is on screen before displaying it
+		//Check if the food is on screen before displaying it
 		if(this.x + this.size/2 > -trans[0] && this.x - this.size/2 < windowWidth/scaleNum - trans[0] && this.y + this.size/2 > -trans[1] && this.y - this.size/2 < windowWidth/scaleNum - trans[1]){
 			push()
 			noStroke()

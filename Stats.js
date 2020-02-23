@@ -8,11 +8,14 @@ function Stats(x, y, w, h){
 	var offset = 25
 	
 	this.display = function(){
-		// Find which mob is highlighted if there is one
+		//Find which mob is highlighted if there is one
 		for(var i = 0; i < entities.length; i++){
 			if(entities[i].highlighted){
+				this.open = true
 				mobIndex = i
 				break
+			}else{
+				this.open = false
 			}
 		}
 		//Only display the stats if there is a highlighted mob
@@ -23,19 +26,19 @@ function Stats(x, y, w, h){
 			textSize(20)
 			textAlign(CENTER)
 
-			// Container for all the stats
+			//Container for all the stats
 			//rect(this.x, this.y, this.w, this.h, 12)
-			// Text settings
+			//Text settings
 			fill(0)
 			noStroke()
 			textAlign(LEFT)
-			// Listing all the stats of the highlighted mob
+			//Listing all the stats of the highlighted mob
 			text("Index: " + mobIndex, this.x + 5, this.y + offset)
 			text("Lifespan: " + ceil(entities[mobIndex].lifeSpan), this.x + 5, this.y + offset*2)
 			text("Size: " + round(entities[mobIndex].size), this.x + 5, this.y + offset*3)
 			text("Min Size: " + round(entities[mobIndex].minSize), this.x + 5, this.y + offset*4)
 			text("Max Size: " + round(entities[mobIndex].maxSize), this.x + 5, this.y + offset*5)
-			// a^2 + b^2 = c^2
+			//a^2 + b^2 = c^2
 			s = sqrt(entities[mobIndex].xSpeed * entities[mobIndex].xSpeed + entities[mobIndex].ySpeed * entities[mobIndex].ySpeed)
 			text("Speed: " + round(s), this.x + 5, this.y + offset*6)
 			text("Max Speed: " + round(entities[mobIndex].maxSpeed), this.x + 5, this.y + offset*7)
@@ -47,13 +50,17 @@ function Stats(x, y, w, h){
 			text("Sector: [" + entities[mobIndex].sector + "]", this.x + 5, this.y + offset*13)
 			text("Speed Gene: " + nf(entities[mobIndex].speedGene, 1,2), this.x + 5, this.y + offset*14)
 			text("Created: " + entities[mobIndex].created, this.x + 5, this.y + offset*15)
-			text("Max Litter: " + entities[mobIndex].litterSize, this.x + 5, this.y + offset*16)
-			text("ID: " + entities[mobIndex].id, this.x + 5, this.y + offset*17)
+			text("Time Alive: " + entities[mobIndex].timeAlive, this.x + 5, this.y + offset*16)
+			text("Max Litter: " + nf(entities[mobIndex].litterSize, 0, 2), this.x + 5, this.y + offset*17)
+			text("Mating Threshold: " + nf(entities[mobIndex].matingLifespanThreshold, 0, 2), this.x + 5, this.y + offset*18)
+			text("Child Lifespan: " + nf(entities[mobIndex].childLife*100, 0, 2) + "%", this.x + 5, this.y + offset*19)
+			text("ID: " + entities[mobIndex].id, this.x + 5, this.y + offset*20)
+			//text("Acceleration: " + entities[mobIndex].acc, this.x + 5, this.y + offset*21)
 			//text("Position: (" + this.x + ", " + this.y + ")" , this.x + 5, this.y + offset*13)
 			
 		
 			pop()
-		// If there is no highlighted mob, don't display anything
+		//If there is no highlighted mob, don't display anything
 		}else{}
 	}
 }
