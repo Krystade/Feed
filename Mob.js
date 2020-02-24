@@ -98,6 +98,10 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 		//Mob ages every frame
 		this.age++
+		//If the mob is a the max age, kill it
+		if(this.age > 30 * 60 * 60){
+			this.die()
+		}
 		this.timeAlive = getTime(this.age)
 		//Update base and max speeds
 		if(this.size < this.maxSize){
@@ -234,8 +238,6 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			print("move took " + (millis() - start) + "ms")
 		}
 	}
-	
-	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.findTarget = function(){
@@ -353,8 +355,8 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 			return(closest)
 	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.breed = function(other){
 		debug = false
 		if(debug){
@@ -404,7 +406,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	}
 	
 
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.split = function(){
 		this.timesSplit++
@@ -431,6 +433,30 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			entities.push(copy)
 			this.size /= 2
 			this.lifeSpan /= 2
+		}
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	this.die = function(){
+		//Lose 40% of lifespan before turning into food
+		this.lifeSpan *= .60
+		while(this.lifeSpan > 0){
+			var newFood = new Food(this.x + random(this.size * -2, this.size * 2), this.y + random(this.size * -2, this.size * 2))
+			//var newFood = new Food(this.x, this.y)
+			newFood.color = color(255,215,0)
+			if(this.lifeSpan > 10){
+				var randPercent = random(0, .2)
+				newFood.value = this.lifeSpan * randPercent
+				this.lifeSpan *= 1 - randPercent
+			}else{
+				newFood.value = this.lifeSpan
+				this.lifeSpan = 0
+				this.xSpeed = 0
+				this.ySpeed = 0
+			}
+			newFood.xSpeed = random(-100, 100)
+			newFood.ySpeed = random(-100, 100)
+			foods.push(newFood)
 		}
 	}
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/

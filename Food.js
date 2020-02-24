@@ -7,8 +7,17 @@ function Food (x,y){
 	this.value = 5
 	this.color = color(20, 200, 40)
 	
+	
+	this.xSpeed = 0
+	this.ySpeed = 0
+	
 	this.sector = calcSector(this.x, this.y)
 	sectors[this.sector[0]][this.sector[1]].push(this)
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	this.update = function(){
+		this.display()
+		this.move()
+	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.display = function(){
@@ -18,10 +27,19 @@ function Food (x,y){
 			noStroke()
 			textAlign(CENTER)
 			textSize(20)
-			fill(20, 200, 40)
+			fill(this.color)
 			ellipse(this.x,this.y, this.size, this.size)
 			pop()
 		}
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	this.move = function(){
+		this.x += this.xSpeed
+		this.y += this.ySpeed
+		
+		this.xSpeed *= .95
+		this.ySpeed *= .95
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 }

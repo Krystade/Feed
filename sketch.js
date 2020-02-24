@@ -62,6 +62,8 @@ var maxGenerationArr = []
 
 //Variable to track whether or not all the entities should be displayed
 var showEntities = false
+var showColors = false
+var colorIndex = 0
 function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
@@ -263,7 +265,7 @@ function draw() {
 		}
 		//Display food
 		for(var i = 0; i < foods.length; i++){
-			foods[i].display()
+			foods[i].update()
 		}
 		//Clear out the colors array to refill them with new values
 		colors = []
@@ -335,14 +337,14 @@ function draw() {
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
 					if(compareRgb(entities[i].rgb, [colors[j][0], colors[j][1], colors[j][2]]) <= 10){
-						colors[j][3] += 1
+						colors[j][3].push(entities[i])
 						colorMatched = true
 						break
 						print("color matched")
 					}else{}
 				}
 				if(!colorMatched){
-					colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
+					colors.push([entities[i].r, entities[i].g, entities[i].b, [entities[i]]])
 				}
 			break
 			}
@@ -350,17 +352,17 @@ function draw() {
 		
 		//Find which colors have the most circles
 		temp = []
-		topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
+		topColors = [[255, 255, 255, []], [255, 255, 255, []], [255, 255, 255, []]]
 		for(var i = 0; i < colors.length; i++){
-			if(colors[i][3] > topColors[2][3]){
+			if(colors[i][3].length > topColors[2][3].length){
 				topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 
-				if(colors[i][3] > topColors[1][3]){
+				if(colors[i][3].length > topColors[1][3].length){
 					temp = topColors[1]
 					topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 					topColors[2] = temp
 
-					if(colors[i][3] > topColors[0][3]){
+					if(colors[i][3].length > topColors[0][3].length){
 						temp = topColors[0]
 						topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 						topColors[1] = temp
@@ -384,6 +386,11 @@ function draw() {
 		if(showEntities){
 			displayMobs(entities)
 		}
+		if(showColors){
+			if(colorIndex != colors.length && colors.length > 0){
+				displayMobs(colors[colorIndex%colors.length][3])
+			}
+		}
 		//Drawing the menu
 		menu.display()
 		stats.display()
@@ -392,7 +399,7 @@ function draw() {
 		for(var i = 0; i < topColors.length; i++){
 			fill(topColors[i][0], topColors[i][1], topColors[i][2])
 			ellipse(200 + 50 * i, 50, 15)
-			text(topColors[i][3], 200 + 50 * i, 38)
+			text(topColors[i][3].length, 200 + 50 * i, 38)
 		}
 		noStroke()
 		fill(0)
@@ -619,8 +626,9 @@ function displayMobs(mobs){
 	for(var i = 0; i < spacing; i++){
 		for(var j = 0; j < spacing; j++){
 			if(i + j*spacing < mobs.length){
-				noStroke()
-				//If the passed array is entities
+				//noStroke()
+				strokeWeight(.75)
+				//If the passed array is entities or colors
 				if(mobs.length > 0 && typeof(mobs[0][0]) != "undefined"){
 					//First Parent
 					fill(mobs[i + j*spacing][0].rgb, 255)
@@ -643,26 +651,6 @@ function displayMobs(mobs){
 		}
 	}
 	pop()
-}
-
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
-
-function displayMobs2(mobs){
-				push()
-			var spacing = int(sqrt(mobs.length) + 1)
-			for(var i = 0; i < spacing; i++){
-				for(var j = 0; j < spacing; j++){
-					if(i + j*spacing < mobs.length){
-						noStroke()
-						//First Parent
-						if(typeof(mobs[i + j*spacing]) != "undefined"){
-							fill(mobs[i + j*spacing].rgb, 255)
-							ellipse(((windowWidth-270)/spacing)*(.5+i), ((windowHeight-100)/spacing)*(.5+j) +  100, 10)
-						}
-					}
-				}
-			}
-			pop()
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -953,6 +941,15 @@ function keyPressed() {
 	if(keyCode == 83){
 	   showEntities = !showEntities
 	}
+	//keyCode 67 is c
+	if(keyCode == 67){
+	   showColors = !showColors
+	}
+	//keyCode 86 is v
+	if(keyCode == 86){
+		//Show the next color in colors
+		colorIndex++
+	 }
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
