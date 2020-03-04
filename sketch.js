@@ -7,6 +7,9 @@ var zoom = Math.log(.5)
 var oldZoom = Math.log(.5)
 //Variable used to retain how much translation should occur
 var trans = [0, 0]
+//Counters that keep track of how long the left or right arrow keys have been held down
+var countLeft = 0
+var countRight = 0
 
 //How quickly entities grow
 var growthTimer = 0	
@@ -32,7 +35,11 @@ var mouseSector = [0, 0]
 var mouseXScale = 0
 var MouseYScale = 0
 
+//Whether or not the family tree of the highlighted mob should be displayed
+var displayTree = false
+//The currently selected mob
 var highlightedMob
+//Number of mobs created total
 var currentId = 0000
 
 //Arrays of past average data
@@ -53,6 +60,10 @@ var avgGenerationArr = []
 var minGenerationArr = []
 var maxGenerationArr = []
 
+//Variable to track whether or not all the entities should be displayed
+var showEntities = false
+var showColors = false
+var colorIndex = 0
 function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
@@ -120,15 +131,35 @@ function draw() {
 	mouseXScale = mouseX * (1/scaleNum) - trans[0]
 	MouseYScale = mouseY * (1/scaleNum) - trans[1]
 	if (keyIsDown(LEFT_ARROW)){
-		trans[0] += 700
-	}	
+		if(typeof(highlightedMob) == "undefined"){
+		   trans[0] += 700
+		}else{
+			if(countLeft == 0){
+				highlightPrev()
+			}
+			countLeft++
+		}
+	//If the key isn't being held down reset the counter
+	}else{
+		countLeft = 0
+	}
 	//Move view up
 	if (keyIsDown(UP_ARROW)){
 		trans[1] += 700
 	}
 	//Move view right
 	if (keyIsDown(RIGHT_ARROW)){
+		if(typeof(highlightedMob) == "undefined"){
 		trans[0] -= 700
+		}else{
+			if(countRight == 0){
+				highlightNext()
+			}
+			countRight++
+		}
+	//If the key isn't being held down reset the counter
+	}else{
+		countRight = 0
 	}
 	//Move view down
 	if (keyIsDown(DOWN_ARROW)){
@@ -159,6 +190,9 @@ function draw() {
 			line(0, i, aWidth, i)
 		}
 		pop()*/
+		strokeWeight(20)
+		stroke(255, 150, 0)
+		line((aWidth/2), 0, (aWidth/2), aHeight)
 
 		//Detect if the mouse is being held down to make a mob every 3 frames
 		if (mouseIsPressed){
@@ -219,14 +253,18 @@ function draw() {
 		}
 		//(foodRate) foods are spawned each frame
 		if (foodRate > 0){
+			randX = random(0, aWidth)
+			while (!(randX < aWidth/2 - 5000) && !(randX > aWidth/2 + 5000)) {
+				randX = random(0, aWidth);
+			}
 			//Im not exactly sure how this works but it does so im not going to change it.
 			if(((frameCount*foodRate)%1).toFixed(4) < foodRate){
-			foods.push(new Food(random(30, aWidth), random(30, aHeight)))
+			foods.push(new Food(randX, random(30, aHeight)))
 			}
 			//When foodRate is greater than 1 need to spawn atleast 1 food every frame
 			if(foodRate >= 1){
 				for(var i = 0; i < int(foodRate); i++){
-					foods.push(new Food(random(30, aWidth), random(30, aHeight)))
+					foods.push(new Food(randX, random(30, aHeight)))
 				}
 			}
 		}else{
@@ -234,7 +272,7 @@ function draw() {
 		}
 		//Display food
 		for(var i = 0; i < foods.length; i++){
-			foods[i].display()
+			foods[i].update()
 		}
 		//Clear out the colors array to refill them with new values
 		colors = []
@@ -257,7 +295,7 @@ function draw() {
 					}else{}
 					break
 				}
-				//Move, Display, Separate, increase breedNeed
+				//Move, Display, split, increase breedNeed
 				entities[i].update()
 				
 				if(typeof(entities.target) != "undefined"){
@@ -306,14 +344,14 @@ function draw() {
 				colorMatched = false
 				for(var j = 0; j < colors.length; j++){
 					if(compareRgb(entities[i].rgb, [colors[j][0], colors[j][1], colors[j][2]]) <= 10){
-						colors[j][3] += 1
+						colors[j][3].push(entities[i])
 						colorMatched = true
 						break
 						print("color matched")
 					}else{}
 				}
 				if(!colorMatched){
-					colors.push([entities[i].r, entities[i].g, entities[i].b, 1])
+					colors.push([entities[i].r, entities[i].g, entities[i].b, [entities[i]]])
 				}
 			break
 			}
@@ -321,17 +359,17 @@ function draw() {
 		
 		//Find which colors have the most circles
 		temp = []
-		topColors = [[255, 255, 255, 0], [255, 255, 255, 0], [255, 255, 255, 0]]
+		topColors = [[255, 255, 255, []], [255, 255, 255, []], [255, 255, 255, []]]
 		for(var i = 0; i < colors.length; i++){
-			if(colors[i][3] > topColors[2][3]){
+			if(colors[i][3].length > topColors[2][3].length){
 				topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 
-				if(colors[i][3] > topColors[1][3]){
+				if(colors[i][3].length > topColors[1][3].length){
 					temp = topColors[1]
 					topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 					topColors[2] = temp
 
-					if(colors[i][3] > topColors[0][3]){
+					if(colors[i][3].length > topColors[0][3].length){
 						temp = topColors[0]
 						topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
 						topColors[1] = temp
@@ -348,6 +386,18 @@ function draw() {
 		textSize(20)
 		scale(1)
 		trans = [0, 0]
+		//Displaying all previous parents of currently highlighted mob
+		if(displayTree && typeof(highlightedMob) != "undefined"){
+			displayMobs(highlightedMob.tree)
+		}
+		if(showEntities){
+			displayMobs(entities)
+		}
+		if(showColors){
+			if(colorIndex != colors.length && colors.length > 0){
+				displayMobs(colors[colorIndex%colors.length][3])
+			}
+		}
 		//Drawing the menu
 		menu.display()
 		stats.display()
@@ -356,7 +406,7 @@ function draw() {
 		for(var i = 0; i < topColors.length; i++){
 			fill(topColors[i][0], topColors[i][1], topColors[i][2])
 			ellipse(200 + 50 * i, 50, 15)
-			text(topColors[i][3], 200 + 50 * i, 38)
+			text(topColors[i][3].length, 200 + 50 * i, 38)
 		}
 		noStroke()
 		fill(0)
@@ -391,7 +441,6 @@ function draw() {
 		//Display the current framerate
 		text(str(round(frameRate())), windowWidth - 30, 25)
 		textSize(15)
-		
 /* Debugging */
 		//Display the x and y position of the mouse in the area
 		//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
@@ -575,6 +624,46 @@ function highlight(entity){
 	highlightedMob = entity
 	highlightedMob.highlighted = true
 }
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function displayMobs(mobs){
+	push()
+	var spacing = int(sqrt(mobs.length) + 1)
+	for(var i = 0; i < spacing; i++){
+		for(var j = 0; j < spacing; j++){
+			if(i + j*spacing < mobs.length){
+				//noStroke()
+				strokeWeight(.75)
+				//If the passed array is entities or colors
+				if(mobs.length > 0 && typeof(mobs[0][0]) != "undefined"){
+					//First Parent
+					fill(mobs[i + j*spacing][0].rgb, 255)
+					ellipse(((windowWidth-270)/spacing)*(.5+i), ((windowHeight-100)/spacing)*(.5+j) +  100, 10)
+					//Second Parent
+					fill(mobs[i + j*spacing][1].rgb, 255)
+					ellipse(((windowWidth-270)/spacing)*(.5+i) + 10, ((windowHeight-100)/spacing)*(.5+j) + 100, 10)
+				//If the passed array is tree
+				}else if(mobs.length > 0 && typeof(mobs[0][0]) == "undefined"){
+					if(mobs[i + j*spacing] == highlightedMob){
+						fill(250, 50, 50)
+						ellipse((windowWidth-270)/spacing*(.5+i), ((windowHeight-100)/spacing)*(.5+j) +  100, 17)
+					}
+					fill(mobs[i + j*spacing].rgb, 255)
+					//If the stats are being shown
+					if(stats.open){
+						ellipse((windowWidth-270)/spacing*(.5+i), ((windowHeight-100)/spacing)*(.5+j) +  100, 10)
+					//Want the mobs to take up the whole width if stats isnt open
+					}else{
+						ellipse(windowWidth/spacing*(.5+i), ((windowHeight-100)/spacing)*(.5+j) +  100, 10)
+					}
+				}
+			}
+		}
+	}
+	pop()
+}
+
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function displayAvgStats(){
@@ -587,7 +676,19 @@ function displayAvgStats(){
 		print("displayAvgStats took " + (millis() - start) + "ms")
 	}
 	/*print*/return("\nTime: " + getTime(frameCount) + 
-					"\nPopulation: " + entities.length + "\nAverage Lifespan: " + avgLifespan + "\nAverage Max Size: " + avgMaxSize + "\nAverage Min Size: " + avgMinSize + "\nAverage Max Speed: " + avgMaxSpeed + "\nAverage Speed Gene: " + avgSpeedGene + "\nAverage Feed Need: " + avgFeedNeed + "\nAverage # of Children: " + avgChildren + "\nAverage Max Litter Size: " + avgLitter +"\nMin Generation: " + minGeneration + "\nMax Generation: " + maxGeneration + "\nAverage Generation: " + avgGeneration)
+					"\nPopulation: " + entities.length + 
+					"\nAverage Lifespan: " + avgLifespan + 
+					"\nAverage Max Size: " + avgMaxSize + 
+					"\nAverage Min Size: " + avgMinSize + 
+					"\nAverage Max Speed: " + avgMaxSpeed + 
+					"\nAverage Speed Gene: " + avgSpeedGene + 
+					"\nAverage Feed Need: " + avgFeedNeed + 
+					"\nAverage Child Lifespan: " + avgChildLifespan*100 + "%" + 
+					"\nAverage # of Children: " + avgChildren + 
+					"\nAverage Max Litter Size: " + avgLitter + 
+					"\nMin Generation: " + minGeneration + 
+					"\nMax Generation: " + maxGeneration + 
+					"\nAverage Generation: " + avgGeneration)
 	
 }
 
@@ -846,7 +947,20 @@ function keyPressed() {
 	//keyCode 85 is u
 	if (keyCode == 85){
 		ungroup()
-		}
+	}
+	//keyCode s is s
+	if(keyCode == 83){
+	   showEntities = !showEntities
+	}
+	//keyCode 67 is c
+	if(keyCode == 67){
+	   showColors = !showColors
+	}
+	//keyCode 86 is v
+	if(keyCode == 86){
+		//Show the next color in colors
+		colorIndex++
+	 }
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/

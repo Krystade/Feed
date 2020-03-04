@@ -46,18 +46,24 @@ function Menu (x, y) {
 	largestMobButton.position(menuButton.x + 98, menuButton.y + 100)
 	largestMobButton.mousePressed(highlightLargest)
 	
-	b1 = createButton('1')
+	b1 = createButton('Oldest')
 	b1.size(85,20)
 	b1.position(menuButton.x + 188, menuButton.y + 40)
-	//b1.mousePressed(highlightNext)
-	b2 = createButton('2')
-	b2.size(85,20)
-	b2.position(menuButton.x + 188, menuButton.y + 40 + 30)
 	b1.mousePressed(highlightOldest)
-	b3 = createButton('3')
+	//Button if tree is being shown
+	b21 = createButton('Hide Tree')
+	b21.size(85,20)
+	b21.position(menuButton.x + 188, menuButton.y + 40 + 30)
+	b21.mousePressed(toggleHighlightedTree)
+	//Secondary Button if tree is not being shown
+	b22 = createButton('Show Tree')
+	b22.size(85,20)
+	b22.position(menuButton.x + 188, menuButton.y + 40 + 30)
+	b22.mousePressed(toggleHighlightedTree)
+	b3 = createButton('Small Max')
 	b3.size(85,20)
 	b3.position(menuButton.x + 188, menuButton.y + 40 + 30*2)
-	//b3.mousePressed(highlightPrev)
+	b3.mousePressed(highlightLowestMaxSize)
 	
 	
 	//Select click mode 
@@ -124,7 +130,7 @@ function Menu (x, y) {
 	foodConfirm.mousePressed(createFood)
 	
 	//All buttons and inputs in an array for easy hiding/showing
-	buttons = [ungroupButton, clearMobsButton, clearFoodButton, healthiestButton, largestMobButton, smallestMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm, b1, b2, b3]
+	buttons = [ungroupButton, clearMobsButton, clearFoodButton, healthiestButton, largestMobButton, smallestMobButton, clickRadio, placeRadio, colorRadio, growthRateInput, growthRateConfirm, foodRateConfirm, foodRateInput, mobsInput, foodInput, colorInput, mobsConfirm, foodConfirm, b1, b21, b22, b3]
 	
 	//Default values for all menu items
 	clickRadio.value('Place')
@@ -182,6 +188,13 @@ function Menu (x, y) {
 					colorInput.hide()
 					placeRadio.hide()
 				}
+			}
+			if(displayTree){
+				b21.show()
+				b22.hide()
+			}else{
+				b21.hide()
+				b22.show()
 			}
 		}else{
 			//Hide all the buttons if the menu isn't open
@@ -314,7 +327,31 @@ function highlightLargest(){
 	}
 }
 
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
+function toggleHighlightedTree(){
+	displayTree = !(displayTree)
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function highlightLowestMaxSize(){
+	if(entities.length > 0 && typeof(entities[0]) != "undefined"){
+		var min = entities[0].maxSize
+		var index = 0
+		for(var i = 1; i < entities.length; i++){
+			if(entities[i].maxSize < min){
+				min = entities[i].maxSize
+				index = i
+			}
+		}
+	if(highlightedMob){
+		highlightedMob.highlighted = false
+	}
+	highlightedMob = entities[index]
+	highlightedMob.highlighted = true
+	}
+}
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 

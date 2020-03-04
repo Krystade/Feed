@@ -11,8 +11,11 @@ function Stats(x, y, w, h){
 		//Find which mob is highlighted if there is one
 		for(var i = 0; i < entities.length; i++){
 			if(entities[i].highlighted){
+				this.open = true
 				mobIndex = i
 				break
+			}else{
+				this.open = false
 			}
 		}
 		//Only display the stats if there is a highlighted mob
