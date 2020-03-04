@@ -102,7 +102,7 @@ function setup() {
 	menu = new Menu(15, 80)
 	var highlightedMob = undefined
 	
-	stats = new Stats(windowWidth - 260, 20, 240, 300)
+	stats = new Stats(windowWidth - 260, 80, 240)
 	print(displayAvgStats())
 	
 	//Put the camera near the center of the spawning area
@@ -893,7 +893,7 @@ function menuPressed(){
 
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight)
-	stats = new Stats(windowWidth - 260, 20, 240, 300)
+	stats.x = windowWidth - 260
 	nextMobButton.position(windowWidth/2 + 5, windowHeight - 50)
 	prevMobButton.position(windowWidth/2 - 130, windowHeight - 50)
 }
@@ -921,13 +921,21 @@ function mousePressed() {
 		
 	//If a mob is highlighted and its stats are being displayed
 	//Don't create a mob when clicking on the stats box
-	}/*else if(stats.open && 
+	}else if(stats.open && 
 			mouseX > stats.x && 
 			mouseX < stats.x + stats.w &&
 			mouseY > stats.y && 
-			mouseY < stats.y + stats.h){
+			mouseY < stats.y + stats.h + 30){
+				if(stats.open && 
+			 	mouseX > stats.x + 5 &&
+			 	mouseX < stats.x - 5 + stats.w &&
+			 	mouseY > stats.y &&
+			 	mouseY < stats.y + 30){
+					stats.tab = floor((mouseX - stats.x)/stats.w*4)
+					print("CLicked Tab")
+				}else{}
 			 //Prevent any spawning/deleting/selecting
-	}*/else{
+	}else{
 		switch (clickRadio.value()){
 			case "Place":
 				if(placeRadio.value() == 'Mob'){
