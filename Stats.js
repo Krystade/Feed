@@ -7,8 +7,8 @@ function Stats(x, y, w){
 	var mobIndex = -1
     var offset = 25
 
-    this.tab = 4
-    this.heights = [200, 140, 220, 600]
+    this.tab = 0
+    this.heights = [190, 90, 90, 185]
 	
     this.display = function () {
         this.h = this.heights[this.tab]
@@ -26,81 +26,125 @@ function Stats(x, y, w){
 		if(entities[mobIndex] && entities[mobIndex].highlighted){
 			this.open = true
 			push()
+			stroke(0)
+			strokeWeight(2)
+			textSize(20)
+			textAlign(LEFT)
             switch (this.tab) {
                 case 0:
-                    stroke(1)
-                    textSize(20)
-                    textAlign(CENTER)
                     //Buttons to switch between stats tabs
-                    fill(200)
-                    rect(this.x + 5, this.y - 30, (this.w - 10) / 4, 30, 5)
+                    fill(230)
+                    rect(this.x + 5, this.y, (this.w - 10) / 4, 30, 5)
                     fill(255)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y - 30, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y, (this.w - 10) / 4, 30, 5)
+                    //Container for all the stats
+                    rect(this.x, this.y + 30, this.w, this.h, 12)
                     //Text settings
                     noStroke()
-                    textAlign(LEFT)
-                    //Container for all the stats
-                    rect(this.x, this.y, this.w, this.h, 12)
-                    text("Index: " + mobIndex, this.x + 5, this.y + offset * 1)
-                    text("ID: " + entities[mobIndex].id, this.x + 5, this.y + offset * 2)
-                    text("Lifespan: " + ceil(entities[mobIndex].lifeSpan), this.x + 5, this.y + offset * 3)
-                    text("Color: RGB(" + entities[mobIndex].r + "," + entities[mobIndex].g + "," + entities[mobIndex].b + ")", this.x + 5, this.y + offset * 4)
-                    text("Sector: [" + entities[mobIndex].sector + "]", this.x + 5, this.y + offset * 5)
-                    text("Created: " + entities[mobIndex].created, this.x + 5, this.y + offset * 6)
-                    text("Time Alive: " + entities[mobIndex].timeAlive, this.x + 5, this.y + offset * 7)
+					fill(0)
+                    text("Index: " + mobIndex, this.x + 5, this.y + 30 + offset * 1)
+                    text("ID: " + entities[mobIndex].id, this.x + 5, this.y + 30 + offset * 2)
+                    text("Lifespan: " + ceil(entities[mobIndex].lifeSpan), this.x + 5, this.y + 30 + offset * 3)
+                    text("Color: RGB(" + entities[mobIndex].r + "," + entities[mobIndex].g + "," + entities[mobIndex].b + ")", this.x + 5, this.y + 30 + offset * 4)
+                    text("Sector: [" + entities[mobIndex].sector + "]", this.x + 5, this.y + 30 + offset * 5)
+                    text("Created: " + entities[mobIndex].created, this.x + 5, this.y + 30 + offset * 6)
+                    text("Time Alive: " + entities[mobIndex].timeAlive, this.x + 5, this.y + 30 + offset * 7)
                     break
                 case 1:
                     //Buttons to switch between stats tabs
-                    rect(this.x + 5, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y - 30, (this.w - 10) / 4, 30, 5)
+					//Drawing the second tab first to reduce number of fill statements
+					fill(230)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y, (this.w - 10) / 4, 30, 5)
+					fill(255)
+                    rect(this.x + 5, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y, (this.w - 10) / 4, 30, 5)
                     //Container for all the stats
-                    rect(this.x, this.y, this.w, this.h, 12)
-                    text("Size: " + round(entities[mobIndex].size), this.x + 5, this.y + offset * 1)
-                    text("Min Size: " + round(entities[mobIndex].minSize), this.x + 5, this.y + offset * 2)
-                    text("Max Size: " + round(entities[mobIndex].maxSize), this.x + 5, this.y + offset * 3)
-                    //Variable used to calculate speed using a^2 + b^2 = c^2
-                    s = sqrt(entities[mobIndex].xSpeed * entities[mobIndex].xSpeed + entities[mobIndex].ySpeed * entities[mobIndex].ySpeed)
-                    text("Speed: " + round(s), this.x + 5, this.y + offset * 4)
-                    text("Max Speed: " + round(entities[mobIndex].maxSpeed), this.x + 5, this.y + offset * 5)
+                    rect(this.x, this.y + 30, this.w, this.h, 12)
+                    //Text settings
+					noStroke()
+					fill(0)
+                    text("Size: " + round(entities[mobIndex].size), this.x + 5, this.y + 30 + offset * 1)
+                    text("Min Size: " + round(entities[mobIndex].minSize), this.x + 5, this.y + 30 + offset * 2)
+                    text("Max Size: " + round(entities[mobIndex].maxSize), this.x + 5, this.y + 30 + offset * 3)
                     break
                 case 2:
                     //Buttons to switch between stats tabs
-                    rect(this.x + 5, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y - 30, (this.w - 10) / 4, 30, 5)
+					//Drawing the third tab first to reduce number of fill statements
+					fill(230)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y, (this.w - 10) / 4, 30, 5)
+					fill(255)
+                    rect(this.x + 5, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y, (this.w - 10) / 4, 30, 5)
                     //Container for all the stats
-                    rect(this.x, this.y, this.w, this.h, 12)
-                    text("Feed Need: " + round(entities[mobIndex].feedNeed), this.x + 5, this.y + offset * 1)
-                    text("Breed Need: " + round(entities[mobIndex].breedNeed), this.x + 5, this.y + offset * 2)
-                    text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + offset * 3)
-                    text("Number of Children: " + entities[mobIndex].numChildren, this.x + 5, this.y + offset * 4)
-                    text("Speed Gene: " + nf(entities[mobIndex].speedGene, 1, 2), this.x + 5, this.y + offset * 5)
-                    text("Max Litter: " + nf(entities[mobIndex].litterSize, 0, 2), this.x + 5, this.y + offset * 6)
-                    text("Mating Threshold: " + nf(entities[mobIndex].matingLifespanThreshold, 0, 2), this.x + 5, this.y + offset * 7)
-                    text("Child Lifespan: " + nf(entities[mobIndex].childLife * 100, 0, 2) + "%", this.x + 5, this.y + offset * 8)
+                    rect(this.x, this.y + 30, this.w, this.h, 12)
+                    //Text settings
+                    noStroke()
+					fill(0)
+                    //Variable used to calculate speed using a^2 + b^2 = c^2
+                    s = sqrt(entities[mobIndex].xSpeed * entities[mobIndex].xSpeed + entities[mobIndex].ySpeed * entities[mobIndex].ySpeed)
+                    text("Speed: " + round(s), this.x + 5, this.y + 30 + offset * 1)
+                    text("Max Speed: " + round(entities[mobIndex].maxSpeed), this.x + 5, this.y + 30 + offset * 2)
+                    text("Speed Gene: " + nf(entities[mobIndex].speedGene, 1, 2), this.x + 5, this.y + 30 + offset * 3)
                     break
                 case 3:
                     //Buttons to switch between stats tabs
-                    rect(this.x + 5, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y - 30, (this.w - 10) / 4, 30, 5)
-                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y - 30, (this.w - 10) / 4, 30, 5)
+					//Drawing the fourth tab first to reduce number of fill statements
+					fill(230)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 3, this.y, (this.w - 10) / 4, 30, 5)
+					fill(255)
+                    rect(this.x + 5, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 1, this.y, (this.w - 10) / 4, 30, 5)
+                    rect(this.x + 5 + (this.w - 10) / 4 * 2, this.y, (this.w - 10) / 4, 30, 5)
                     //Container for all the stats
-                    rect(this.x, this.y, this.w, this.h, 12)
-                    push()
-                    textAlign(CENTER)
-                    text("Graphs", this.x + this.w / 2, this.y + offset * 1)
-                    pop()
+                    rect(this.x, this.y + 30, this.w, this.h, 12)
+                    //Text settings
+                    noStroke()
+					fill(0)
+                    text("Feed Need: " + round(entities[mobIndex].feedNeed), this.x + 5, this.y + 30 + offset * 1)
+                    text("Breed Need: " + round(entities[mobIndex].breedNeed), this.x + 5, this.y + 30 + offset * 2)
+                    text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + 30 + offset * 3)
+                    text("Number of Children: " + entities[mobIndex].numChildren, this.x + 5, this.y + 30 + offset * 4)
+                    text("Max Litter: " + nf(entities[mobIndex].litterSize, 0, 2), this.x + 5, this.y + 30 + offset * 5)
+                    text("Mating Threshold: " + nf(entities[mobIndex].matingLifespanThreshold, 0, 2), this.x + 5, this.y + 30 + offset * 6)
+                    text("Child Lifespan: " + nf(entities[mobIndex].childLife * 100, 0, 2) + "%", this.x + 5, this.y + 30 + offset * 7)
                     break
                 default:
                     this.tab = 0
                     break
             }
+			//Icon 1
+			stroke(0)
+			fill(255)
+			rect(this.x + (this.w - 10)/8 - 8, this.y + 3, 23, 22)
+			line(this.x + (this.w - 10)/8 - 2, this.y + 10, this.x + (this.w - 10)/8 + 8, this.y + 10)
+			line(this.x + (this.w - 10)/8 - 2, this.y + 14, this.x + (this.w - 10)/8 + 8, this.y + 14)
+			line(this.x + (this.w - 10)/8 - 2, this.y + 18, this.x + (this.w - 10)/8 + 8, this.y + 18)
+			//Icon 2
+			stroke(0)
+			fill(70, 190, 190)
+			ellipse(this.x + (this.w)/4 + 25, this.y + 15, 20)
+			fill(90, 220, 220)
+			ellipse(this.x + (this.w)/4 + 35, this.y + 20, 10)
+			//Icon 3
+			fill(70, 190, 190)
+			ellipse(this.x + (this.w)/2 + 35, this.y + 15, 20)
+			stroke(180)
+			line(this.x + (this.w)/2 + 10, this.y + 10, this.x + (this.w)/2 + 22, this.y + 10)
+			line(this.x + (this.w)/2 + 10, this.y + 15, this.x + (this.w)/2 + 22, this.y + 15)
+			line(this.x + (this.w)/2 + 10, this.y + 20, this.x + (this.w)/2 + 22, this.y + 20)
+			//Icon 4
+			fill(70, 190, 190, 200)
+			ellipse(this.x + (this.w) - 45, this.y + 15, 20)
+			fill(84, 175, 232)
+			ellipse(this.x + (this.w) - 30, this.y + 15, 20)
+			noFill()
+			stroke(0)
+			ellipse(this.x + (this.w) - 45, this.y + 15, 20)
+			ellipse(this.x + (this.w) - 30, this.y + 15, 20)
 			//Listing all the stats of the highlighted mob
 			
 			//a^2 + b^2 = c^2
