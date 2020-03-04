@@ -546,6 +546,68 @@ function highlightNext(){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
+function highlightNext(){
+	debug = false
+	if(debug){
+		start = millis()
+	}
+	if(entities.length > 0){
+		var index = 0
+		for(var i = 0; i < entities.length; i++){
+			if(entities[i] == highlightedMob){
+				if(i == entities.length - 1){
+					index = 0
+
+				}else{
+					index = i+1
+				}
+				break
+			}
+		}
+		if(highlightedMob){
+			highlightedMob.highlighted = false
+		}
+		highlightedMob = entities[index]
+		highlightedMob.highlighted = true
+	}
+	if(debug){
+		print("highlightNext took " + (millis() - start) + "ms")
+	}
+}
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+	function calcSector(x, y){
+	debug = false
+		if(debug){
+			start = millis()
+		}
+		//Which column
+		sectorX = int(x/(sectorSize))
+		//Which Row
+		sectorY = int(y/(sectorSize))
+		
+		//If the entity is outside of the food spawning area, pretend they're just in the closest sector
+		//Check X Sector
+		if(sectorX < 0){
+			sectorX = 0
+		}else if(sectorX >= aWidth/sectorSize){
+				 sectorX = aWidth/sectorSize - 1
+		}
+		//Check Y Sector
+		if(sectorY < 0){
+			sectorY = 0
+		}else if(sectorY >= aHeight/sectorSize){
+				 sectorY = aHeight/sectorSize - 1
+		}
+		
+		sector = [sectorX, sectorY]
+		return sector
+		if(debug){
+		  print("calcSector took " + (millis() - start) + "ms")
+	  }
+	} 
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 //Currently only used in changing mutating color, range will be from 0-255 for food but likely 0 - 1000 for other genes when implemented
 function mutate(gene, range){
 	debug = false
