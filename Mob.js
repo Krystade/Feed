@@ -41,8 +41,8 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//Maximum number of offspring that can be had at once
 	this.litterSize = int(random(1,8))
 	//Percent of current lifespan given to offspring
-	//this.childLife = random(.05, .9)
-	this.childLife = .2
+	this.childLife = random(.05, .9)
+	//this.childLife = .2
 	//How long since the mob has bred
 	this.breedNeed = 0
 	//Cap number of offspring created at once to 5
@@ -54,11 +54,13 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//If the mob has enough life to search for a mate
 	this.canSearch = false
 	//How many generations in the mob is
-	this.generation = 0
+	this.generation = 1
 	//Array of all ancestors
 	this.tree = []
 	//How many children the mob has had
 	this.numChildren = 0
+	//How many times a mob has split
+	this.timesSplit = 0
 	//Cooldown is 30 seconds
 	//this.breedCoolDown = fr * 30
 	
@@ -96,6 +98,10 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 		//Mob ages every frame
 		this.age++
+		//If the mob is a the max age, kill it
+		if(this.age > 30 * 60 * 10){
+			this.die()
+		}
 		this.timeAlive = getTime(this.age)
 		//Update base and max speeds
 		if(this.size < this.maxSize){
@@ -114,7 +120,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		if(this.x + this.size/2 > -trans[0] && this.x - this.size/2 < windowWidth/scaleNum - trans[0] && this.y + this.size/2 > -trans[1] && this.y - this.size/2 < windowWidth/scaleNum - trans[1]){
 			this.display()
 		}
-		this.separate()
+		//this.split()
 		if(this.maxBreedNeed > this.breedNeed){
 			this.breedNeed++
 		}
@@ -213,21 +219,10 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}else{
 			this.xDir = (this.target.x - this.x)/abs(this.target.x - this.x + .0001)
 			//Steering in the X direction
-			//If the mob is accelerating the same direction it is moving it wont exceed its max x speed by more than 2
-			/*if(abs(this.xSpeed + (this.acc*this.xDir)) <= this.maxXSpeed){
-				this.xSpeed += this.acc*this.xDir
-			}else{
-			}
-			this.yDir = (this.target.y - this.y)/abs(this.target.y - this.y + .0001)
-			//Steering in the Y direction
-			//If the mob is accelerating the same direction it is moving it wont exceed its max y speed by more than 2
-			if(abs(this.ySpeed + (this.acc*this.yDir)) <= this.maxYSpeed){
-				this.ySpeed += this.acc*this.yDir
-			}*/
+			//If the mob is accelerating the same direction it is moving it wont exceed its max x speed by more than 3
 			if(abs(this.xSpeed + (3*this.xDir)) <= this.maxXSpeed){
 				this.xSpeed += 3*this.xDir
-			}else{
-			}
+			}else{}
 			this.yDir = (this.target.y - this.y)/abs(this.target.y - this.y + .0001)
 			//Steering in the Y direction
 			//If the mob is accelerating the same direction it is moving it wont exceed its max y speed by more than 2
@@ -243,8 +238,6 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			print("move took " + (millis() - start) + "ms")
 		}
 	}
-	
-	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.findTarget = function(){
@@ -362,8 +355,8 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 			return(closest)
 	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	this.breed = function(other){
 		debug = false
 		if(debug){
@@ -379,19 +372,22 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		
 		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan)
 		
-		//child.childLife = mutate(rand[round(random(0,1))].childLife, [.001, .99])
+		child.childLife = mutate(rand[round(random(0,1))].childLife, [.0001, .99])
 		child.matingLifespanThreshold = mutate(rand[round(random(0,1))].matingLifespanThreshold, [10, 80])
 		child.feedNeed = mutate(rand[round(random(0,1))].feedNeed, [100, 4000 + this.feedNeed*.2])
 		child.litterSize = mutate(rand[round(random(0,1))].litterSize, [1.1, (8 + this.litterSize*.2)])
 		child.maxBreedNeed = child.feedNeed * child.litterSize
 		child.speedGene = mutate(rand[round(random(0,1))].speedGene, [0, 5])
-		child.tree = this.tree
+		for(var i = 0; i < this.tree.length; i++){
+			child.tree.push([this.tree[i][0],this.tree[i][1]])
+		}
 		child.tree.push([this, other])
-		if(this.generation > other.generation){
+		/*if(this.generation > other.generation){
 			child.generation = this.generation + 1
 		}else{
 			child.generation = other.generation + 1
-		}
+		}*/
+		child.generation = child.tree.length
 		entities.push(child)
 		this.numChildren += 1
 		if(debug){
@@ -409,11 +405,16 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 	}
 	
+
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-	this.separate = function(){
-		//If the mobs get to 90% of their max size allow them to split into two mobs half the size with half the lifespan
-		if(this.lifeSpan >= 1000){
+	this.split = function(){
+		this.timesSplit++
+		//If the mobs have enough lifespan they will split into two identical halves
+		//Lose a considerable amount of lifespan but guarantees a possible mate
+		if(this.lifeSpan >= 500){
+			this.lifeSpan *= .70
+			this.breedNeed = 0
 			copy = new Mob(this.r, this.g, this.b, this.x, this.y, this.size/2, this.lifeSpan/2)
 			
 			copy.minSize = this.minSize
@@ -425,10 +426,37 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			copy.childLife = this.childLife
 			copy.speedGene = this.speedGene
 			copy.generation = this.generation
+			for(var i = 0; i < this.tree.length; i++){
+				copy.tree.push([this.tree[i][0],this.tree[i][1]])
+			}
 			
 			entities.push(copy)
 			this.size /= 2
 			this.lifeSpan /= 2
+		}
+	}
+	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+	
+	this.die = function(){
+		//Lose 40% of lifespan before turning into food
+		this.lifeSpan *= .60
+		while(this.lifeSpan > 0){
+			var newFood = new Food(this.x + random(this.size * -2, this.size * 2), this.y + random(this.size * -2, this.size * 2))
+			//var newFood = new Food(this.x, this.y)
+			newFood.color = color(255,215,0)
+			if(this.lifeSpan > 10){
+				var randPercent = random(0, .2)
+				newFood.value = this.lifeSpan * randPercent
+				this.lifeSpan *= 1 - randPercent
+			}else{
+				newFood.value = this.lifeSpan
+				this.lifeSpan = 0
+				this.xSpeed = 0
+				this.ySpeed = 0
+			}
+			newFood.xSpeed = random(-100, 100)
+			newFood.ySpeed = random(-100, 100)
+			foods.push(newFood)
 		}
 	}
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
