@@ -146,7 +146,7 @@ function draw() {
 		countLeft = 0
 	}
 	//Move view up
-	if (keyIsDown(UP_ARROW)){
+	if (keyIsDown(UP_ARROW) && typeof(highlightedMob) == "undefined"){
 		trans[1] += 700
 	}
 	//Move view right
@@ -164,7 +164,7 @@ function draw() {
 		countRight = 0
 	}
 	//Move view down
-	if (keyIsDown(DOWN_ARROW)){
+	if (keyIsDown(DOWN_ARROW) && typeof(highlightedMob) == "undefined"){
 		trans[1] -= 700
 	}
 	push()
@@ -193,7 +193,7 @@ function draw() {
 	pop()*/
 	strokeWeight(20)
 	stroke(255, 150, 0)
-	line((aWidth/2), 0, (aWidth/2), aHeight)
+	//line((aWidth/2), 0, (aWidth/2), aHeight)
 
 	//Detect if the mouse is being held down to make a mob every 3 frames
 	if (mouseIsPressed){
@@ -255,9 +255,9 @@ function draw() {
 	//(foodRate) foods are spawned each frame
 	if (foodRate > 0 && foods.length < 2500 && !paused){
 		randX = random(0, aWidth)
-		while (!(randX < aWidth/2 - 5000) && !(randX > aWidth/2 + 5000)) {
+		/*while (!(randX < aWidth/2 - 5000) && !(randX > aWidth/2 + 5000)) {
 			randX = random(0, aWidth);
-		}
+		}*/
 		//Im not exactly sure how this works but it does so im not going to change it.
 		if(((frameCounter*foodRate)%1).toFixed(4) < foodRate){
 		foods.push(new Food(randX, random(30, aHeight)))
@@ -378,7 +378,6 @@ function draw() {
 	}
 	//push() at start of draw so the text stays in view
 	pop()
-	//push() to keep the menu button in the top right corner
 	tempTrans = [trans[0], trans[1]]
 	strokeWeight(2)
 	stroke(0)
@@ -442,9 +441,9 @@ function draw() {
 	textSize(15)
 /* Debugging */
 	//Display the x and y position of the mouse in the area
-	//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
+	text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 	//Display the x and y position of the mouse in the screen
-	//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+	text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
     pop()
     if (!paused) {
         frameCounter++
@@ -1042,12 +1041,19 @@ function keyPressed() {
 
 function mouseWheel(event) {
 	oldZoom = zoom
+	oldTrans = [trans[0], trans[1]]
+	//mousewheel up
+	//zoom in
 	if(event.delta < 0){
-		zoom = zoom + .05
+		zoom += .05
+	//mouswheel down
+	//zoom out
 	}else{
-		zoom = zoom - .05
+		zoom -= .05
 	}
-	
+	scaleChange = Math.pow(10, -oldZoom) - Math.pow(10, -zoom)
+	trans[0] -= (windowWidth/2)*(scaleChange)
+	trans[1] -= (windowHeight/2)*(scaleChange)
 	//https://stackoverflow.com/questions/2916081/zoom-in-on-a-point-using-scale-and-translate
 
 }
