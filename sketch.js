@@ -1,6 +1,8 @@
 p5.disableFriendlyErrors = true
 //Variable used to pause the game so checking values without anything moving will be easy
 var paused = false
+//Variable to track frames elapsed while not paused
+var frameCounter = 0
 //Variable used to retain how much scaling should occur
 //zoom has to be log(.5) so the scale is .5
 var zoom = Math.log(.5)
@@ -121,7 +123,7 @@ function setup() {
 
 function draw() {
 	//Every 10 minutes display average stats
-	if(frameCount%(10*60*fr) == 0){
+	if(frameCounter%(10*60*fr) == 0){
 		print(displayAvgStats())
 		cleanSectors()
 	}
@@ -257,7 +259,7 @@ function draw() {
 			randX = random(0, aWidth);
 		}
 		//Im not exactly sure how this works but it does so im not going to change it.
-		if(((frameCount*foodRate)%1).toFixed(4) < foodRate){
+		if(((frameCounter*foodRate)%1).toFixed(4) < foodRate){
 		foods.push(new Food(randX, random(30, aHeight)))
 		}
 		//When foodRate is greater than 1 need to spawn atleast 1 food every frame
@@ -414,7 +416,7 @@ function draw() {
 	trans = [tempTrans[0], tempTrans[1]]
 	//Population
 	
-	text("Time: " + getTime(frameCount), 20, 45)
+	text("Time: " + getTime(frameCounter), 20, 45)
 	
 	text("Population: " + entities.length, 20, 65)
 	//Instructions
@@ -443,7 +445,10 @@ function draw() {
 	//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 	//Display the x and y position of the mouse in the screen
 	//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
-	pop()
+    pop()
+    if (!paused){
+        frameCounter++
+    }
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -625,7 +630,7 @@ function mutate(gene, range){
 		gene += (random() - .5)*max/2.5
 	}else{
 		gene = random(min, max)
-		//print("Random Gene " + getTime(frameCount))
+		//print("Random Gene " + getTime(frameCounter))
 	}
 	if(gene > max){
 	   gene = max
@@ -733,7 +738,7 @@ function displayAvgStats(){
 	if(debug){
 		print("displayAvgStats took " + (millis() - start) + "ms")
 	}
-	/*print*/return("\nTime: " + getTime(frameCount) + 
+	/*print*/return("\nTime: " + getTime(frameCounter) + 
 					"\nPopulation: " + entities.length + 
 					"\nAverage Lifespan: " + avgLifespan + 
 					"\nAverage Max Size: " + avgMaxSize + 
@@ -794,22 +799,22 @@ function calcAvgStats(){
 	}
 	
 	//Record data points for later graphing
-	avgLifespanArr.push(avgLifespan, frameCount)
-	avgAgeArr.push(avgAge, frameCount)
+	avgLifespanArr.push(avgLifespan, frameCounter)
+	avgAgeArr.push(avgAge, frameCounter)
 	
-	avgMaxSizeArr.push(avgMaxSize, frameCount)
-	avgMinSizeArr.push(avgMinSize, frameCount)
-	avgMaxSpeedArr.push(avgMaxSpeed, frameCount)
-	avgSpeedGeneArr.push(avgSpeedGene, frameCount)
+	avgMaxSizeArr.push(avgMaxSize, frameCounter)
+	avgMinSizeArr.push(avgMinSize, frameCounter)
+	avgMaxSpeedArr.push(avgMaxSpeed, frameCounter)
+	avgSpeedGeneArr.push(avgSpeedGene, frameCounter)
 	
-	avgFeedNeedArr.push(avgFeedNeed, frameCount)
-	avgMatingThresholdArr.push(avgMatingThreshold, frameCount)
-	avgChildLifespanArr.push(avgChildLifespan, frameCount)
-	avgChildrenArr.push(avgChildren, frameCount)
-	avgLitterArr.push(avgLitter, frameCount)
-	avgGenerationArr.push(avgGeneration, frameCount)
-	minGenerationArr.push(minGeneration, frameCount)
-	maxGenerationArr.push(maxGeneration, frameCount)
+	avgFeedNeedArr.push(avgFeedNeed, frameCounter)
+	avgMatingThresholdArr.push(avgMatingThreshold, frameCounter)
+	avgChildLifespanArr.push(avgChildLifespan, frameCounter)
+	avgChildrenArr.push(avgChildren, frameCounter)
+	avgLitterArr.push(avgLitter, frameCounter)
+	avgGenerationArr.push(avgGeneration, frameCounter)
+	minGenerationArr.push(minGeneration, frameCounter)
+	maxGenerationArr.push(maxGeneration, frameCounter)
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -858,12 +863,12 @@ function cleanSectors(){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function getTime(framecount){
+function getTime(frameCounter){
 	debug = false
 	if(debug){
 		start = millis()
 	}
-	time = (framecount) / fr
+	time = (frameCounter) / fr
 	hours = floor(time/60/60)
 	minutes = floor(time/60 - hours*60)
 	seconds = floor(time - minutes*60 - hours*60*60)
