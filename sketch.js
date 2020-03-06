@@ -446,8 +446,16 @@ function draw() {
 	//Display the x and y position of the mouse in the screen
 	//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
     pop()
-    if (!paused){
+    if (!paused) {
         frameCounter++
+    } else {
+        push()
+        stroke(0)
+        strokeWeight(2)
+        fill('RED')
+        textAlign(CENTER)
+        text("PAUSED", windowWidth/2, windowHeight/2 - 30)
+        pop()
     }
 }
 
@@ -1055,7 +1063,7 @@ function average(value1, value2){
 
 //the following functions are based off of the pseudocode
 //found on www.easyrgb.com
-//I took this code from https://github.com/antimatter15/rgb-lab/blob/master/color.js
+//I found this code at https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
 function rgb2lab(rgb){
 	debug = false
