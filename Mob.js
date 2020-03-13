@@ -89,70 +89,76 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
-	this.update = function(){
-		//lifeSpan decreases every 30 frames (1 sec)
-		this.lifeSpan -= 1/fr
-		this.frames++
-		if (this.frames >= 15){
-			this.frames = 0
-		}
-		//Mob ages every frame
-		this.age++
-		//If the mob is a the max age, kill it
-		if(this.age > 30 * 60 * 10){
-			this.die()
-		}
-		this.timeAlive = getTime(this.age)
-		//Update base and max speeds
-		if(this.size < this.maxSize){
-			this.baseSpeed = (1500 - this.size)*.02 + this.speedGene
-			this.maxXSpeed = this.baseSpeed
-			this.maxYSpeed = this.baseSpeed
-		}
-		//Check if breed cooldown has completed before being able to breed
-		if(this.breedNeed >= this.feedNeed){
-			this.canBreed = true
-		}
-		//Move the mob
-		this.move()
-		
-		//Check if the mob is on screen before displaying it
-		if(this.x + this.size/2 > -trans[0] && this.x - this.size/2 < windowWidth/scaleNum - trans[0] && this.y + this.size/2 > -trans[1] && this.y - this.size/2 < windowWidth/scaleNum - trans[1]){
-			this.display()
-		}
-		//this.split()
-		if(this.maxBreedNeed > this.breedNeed){
-			this.breedNeed++
-		}
-		//If the mob is targetting another mob and is close enough, breed
-		if(typeof(this.target) != "undefined" && this.target.mob && dist(this.x, this.y, this.target.x, this.target.y) < (this.size/2 + this.target.size/2)){
-			this.breed(this.target)
-		}
-		
-		//If the mob moves to a different sector
-		if((this.sector[0] != this.prevSector[0]) || (this.sector[1] != this.prevSector[1])){
-			secX = this.sector[0]
-			secY = this.sector[1]
-			sectors[secX][secY].push(this)
-			//Check if the previous sector the mob was in was valid and if so
-			//Loop through the sector that the mob was in and remove it from the array when found
-			if(this.prevSector[0] != -1 && this.prevSector[1] != -1){
-				for(var j = 0; j < sectors[this.prevSector[0]][this.prevSector[1]].length; j++){
-					if(this == sectors[this.prevSector[0]][this.prevSector[1]][j]){
-						sectors[this.prevSector[0]][this.prevSector[1]].splice(j,1)
-						//print("moved from " + this.prevSector + " to " + this.sector)
-						break
-					}
-				}
-			}
-		}
-		//Need this at the end so newly created mobs get added to the right sector automatically
-		//Update entities sector
-		//Not sure if doing this is a waste or not. Think its the exact same as this.prevSector = this.sector
-		this.prevSector[0] = this.sector[0]
-		this.prevSector[1] = this.sector[1]
-		//Finding and assigning the entities sector
-		this.sector = calcSector(this.x, this.y)
+    this.update = function () {
+        if (!paused) {
+            //lifeSpan decreases every 30 frames (1 sec)
+            this.lifeSpan -= 1 / fr
+            this.frames++
+            if (this.frames >= 15) {
+                this.frames = 0
+            }
+            //Mob ages every frame
+            this.age++
+            //If the mob is a the max age, kill it
+            if (this.age > 30 * 60 * 10) {
+                this.die()
+            }
+            this.timeAlive = getTime(this.age)
+            //Update base and max speeds
+            if (this.size < this.maxSize) {
+                this.baseSpeed = (1500 - this.size) * .02 + this.speedGene
+                this.maxXSpeed = this.baseSpeed
+                this.maxYSpeed = this.baseSpeed
+            }
+            //Every 15 frames after they are born they grow unless they are at the max size
+            if (this.frames == 0 && this.size < this.maxSize) {
+                this.size += this.growth
+            }
+            //Check if breed cooldown has completed before being able to breed
+            if (this.breedNeed >= this.feedNeed) {
+                this.canBreed = true
+            }
+            //Move the mob
+            this.move()
+
+            //this.split()
+            if (this.maxBreedNeed > this.breedNeed) {
+                this.breedNeed++
+            }
+            //If the mob is targetting another mob and is close enough, breed
+            if (typeof (this.target) != "undefined" && this.target.mob && dist(this.x, this.y, this.target.x, this.target.y) < (this.size / 2 + this.target.size / 2)) {
+                this.breed(this.target)
+            }
+
+            //If the mob moves to a different sector
+            if ((this.sector[0] != this.prevSector[0]) || (this.sector[1] != this.prevSector[1])) {
+                secX = this.sector[0]
+                secY = this.sector[1]
+                sectors[secX][secY].push(this)
+                //Check if the previous sector the mob was in was valid and if so
+                //Loop through the sector that the mob was in and remove it from the array when found
+                if (this.prevSector[0] != -1 && this.prevSector[1] != -1) {
+                    for (var j = 0; j < sectors[this.prevSector[0]][this.prevSector[1]].length; j++) {
+                        if (this == sectors[this.prevSector[0]][this.prevSector[1]][j]) {
+                            sectors[this.prevSector[0]][this.prevSector[1]].splice(j, 1)
+                            //print("moved from " + this.prevSector + " to " + this.sector)
+                            break
+                        }
+                    }
+                }
+            }
+            //Need this at the end so newly created mobs get added to the right sector automatically
+            //Update entities sector
+            //Not sure if doing this is a waste or not. Think its the exact same as this.prevSector = this.sector
+            this.prevSector[0] = this.sector[0]
+            this.prevSector[1] = this.sector[1]
+            //Finding and assigning the entities sector
+            this.sector = calcSector(this.x, this.y)
+        } else { }
+        //Check if the mob is on screen before displaying it
+        if (this.x + this.size / 2 > -trans[0] && this.x - this.size / 2 < windowWidth / scaleNum - trans[0] && this.y + this.size / 2 > -trans[1] && this.y - this.size / 2 < windowWidth / scaleNum - trans[1]) {
+            this.display()
+        }
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
@@ -191,10 +197,6 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			text(ceil(this.lifeSpan), this.x + this.size / 3, this.y - this.size * 1.3)
 		}else {
 			text(ceil(this.lifeSpan), this.x, this.y - this.size * .6)
-		}	
-		//Every 15 frames after they are born they grow unless they are at the max size
-		if(this.frames == 0 && this.size < this.maxSize){
-			this.size += this.growth
 		}
 		//Opacity directly correlates to lifeSpan, 0 is clear 255 is solid
 		this.color = color(this.r, this.g, this.b, this.lifeSpan * 5)

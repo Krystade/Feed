@@ -1,6 +1,8 @@
 p5.disableFriendlyErrors = true
 //Variable used to pause the game so checking values without anything moving will be easy
 var paused = false
+//Variable to track frames elapsed while not paused
+var frameCounter = 0
 //Variable used to retain how much scaling should occur
 //zoom has to be log(.5) so the scale is .5
 var zoom = Math.log(.5)
@@ -121,7 +123,7 @@ function setup() {
 
 function draw() {
 	//Every 10 minutes display average stats
-	if(frameCount%(10*60*fr) == 0){
+	if(frameCounter%(10*60*fr) == 0){
 		print(displayAvgStats())
 		cleanSectors()
 	}
@@ -144,7 +146,7 @@ function draw() {
 		countLeft = 0
 	}
 	//Move view up
-	if (keyIsDown(UP_ARROW)){
+	if (keyIsDown(UP_ARROW) && typeof(highlightedMob) == "undefined"){
 		trans[1] += 700
 	}
 	//Move view right
@@ -162,292 +164,298 @@ function draw() {
 		countRight = 0
 	}
 	//Move view down
-	if (keyIsDown(DOWN_ARROW)){
+	if (keyIsDown(DOWN_ARROW) && typeof(highlightedMob) == "undefined"){
 		trans[1] -= 700
 	}
-	if(!paused){
+	push()
+	//Set the background color
+	background(bground)
+	//Scale and translate all entities to simulate zooming and moving
+	scale(scaleNum)
+	translate(trans[0], trans[1])
+		
+	/*Drawing Sector Borders*/
+	/*Used for Debugging*/
+	/*push()
+	strokeWeight(20)
+	stroke(0,0,0,50)
+	for(var i = 0; i <= aWidth; i += sectorSize){
 		push()
-		//Set the background color
-		background(bground)
-		//Scale and translate all entities to simulate zooming and moving
-		scale(scaleNum)
-		translate(trans[0], trans[1])
-		
-		/*Drawing Sector Borders*/
-		/*Used for Debugging*/
-		/*push()
-		strokeWeight(20)
-		stroke(0,0,0,50)
-		for(var i = 0; i <= aWidth; i += sectorSize){
-			push()
-			if(i/sectorSize%5 == 0){
-				stroke(250, 80, 130)
-			}
-			line(i, 0, i, aHeight)
-			pop()
+		if(i/sectorSize%5 == 0){
+			stroke(250, 80, 130)
 		}
-		for(var i = 0; i <= aHeight; i += sectorSize){
-			line(0, i, aWidth, i)
-		}
-		pop()*/
-		strokeWeight(20)
-		stroke(255, 150, 0)
-		line((aWidth/2), 0, (aWidth/2), aHeight)
-
-		//Detect if the mouse is being held down to make a mob every 3 frames
-		if (mouseIsPressed){
-			pressed++
-			if(pressed % 2 == 0 && pressed > 10){
-				switch (clickRadio.value()){
-					case "Place":
-						if(placeRadio.value() == 'Mob'){
-							if(colorRadio.value() == 'Random'){
-								entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
-							}else{
-								placeColor = split(colorInput.value(), ',')
-								entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
-							}
-						}else{
-							foods.push(new Food(mouseXScale, MouseYScale))
-						}
-						break
-					case "Delete":
-						for(var i = 0; i < entities.length; i++){
-							if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
-								print("Clicked on ", entities[i])
-								//Remove the mob from sectors
-								sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
-								//Remove the mob from entities
-								entities.splice(i,1)
-								i--;
-							}
-						}
-						break
-					case "Select":
-						for(var i = entities.length - 1; i >= 0; i--){
-							if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
-								//Check if the clicked on mob is already highlighted
-								if(entities[i].highlighted == false){
-									//If it isnt already highlighted, highlight it
-									entities[i].highlighted = true
-									if(typeof(highlightedMob) != "undefined"){
-										highlightedMob.highlighted = false
-										highlightedMob = entities[i]
-									}else{
-										highlightedMob = entities[i]
-									}
-									print("Clicked on", highlightedMob)
-									break
-								//If the mob is already highlighted, unhighlight it
-								}else{
-									entities[i].highlighted = false
-									highlightedMob = undefined
-								}
-							}
-						}
-						break		
-				}
-			}
-		}else{
-			pressed = 0
-		}
-		//(foodRate) foods are spawned each frame
-		if (foodRate > 0){
-			randX = random(0, aWidth)
-			while (!(randX < aWidth/2 - 5000) && !(randX > aWidth/2 + 5000)) {
-				randX = random(0, aWidth);
-			}
-			//Im not exactly sure how this works but it does so im not going to change it.
-			if(((frameCount*foodRate)%1).toFixed(4) < foodRate){
-			foods.push(new Food(randX, random(30, aHeight)))
-			}
-			//When foodRate is greater than 1 need to spawn atleast 1 food every frame
-			if(foodRate >= 1){
-				for(var i = 0; i < int(foodRate); i++){
-					foods.push(new Food(randX, random(30, aHeight)))
-				}
-			}
-		}else{
-		//Don't spawn food if food rate is 0 or negative
-		}
-		//Display food
-		for(var i = 0; i < foods.length; i++){
-			foods[i].update()
-		}
-		//Clear out the colors array to refill them with new values
-		colors = []
-		for(var i = 0; i < entities.length; i++){
-			//Allows for early exit if the mob has less than 0 lifespan
-			while(true){
-				//Remove dead entities
-				if(entities[i].lifeSpan <= 0){
-					//Unhighlight the mob if it is selected
-					if(highlightedMob == entities[i]){
-						print("Highlighted mob died")
-						highlightedMob = undefined
-					}
-					//Remove the mob from sectors
-					sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
-					//Remove the mob from entities
-					entities.splice(i, 1)
-					if(i != 0){
-						i--
-					}else{}
-					break
-				}
-				//Move, Display, split, increase breedNeed
-				entities[i].update()
-				
-				if(typeof(entities.target) != "undefined"){
-					if(entities[i].target.mob == false){
-						entities[i].findTarget()
-					}
-				}else{
-					entities[i].findTarget()
-				}
-				
-				//Have the camera follow highlighted mob
-				if(typeof(highlightedMob) != "undefined"){
-					if((windowWidth/2 * 1/scaleNum) - trans[0] != highlightedMob.x){
-						trans[0] = (windowWidth/2 * 1/scaleNum) - highlightedMob.x
-					}
-					if((windowHeight/2 * 1/scaleNum) - trans[1] != highlightedMob.y){
-						trans[1] = (windowHeight/2 * 1/scaleNum) - highlightedMob.y
-					}
-				}
-				
-				for(var j = 0; j < foods.length; j++){
-				//Check if the mob exists and if it is within range of food
-					if(typeof(foods[j]) != "undefined"){
-						if(entities[i].eats(foods[j])){
-							//If it does lengthen the mob's life
-							entities[i].lifeSpan += foods[j].value
-							pos = findInSectors(foods[j])
-							//And remove the food from foods and sectors
-							if(pos == -1 || typeof(sectors[foods[j].sector[0]][foods[j].sector[1]][pos[2]]) == "undefined"){
-								foods.splice(j, 1)
-							}else{
-								//sectors[pos[0]][pos[1]].splice(pos[2], 1)
-								sectors[foods[j].sector[0]][foods[j].sector[1]].splice(pos[2], 1)
-								foods.splice(j, 1)
-								if(j != 0){
-									j--
-								}
-							}
-						}
-					}
-				}
-				
-				//Checking if the entities color is already in the list
-				//If it is add to the count
-				//If it is not add the color to the list
-				colorMatched = false
-				for(var j = 0; j < colors.length; j++){
-					if(compareRgb(entities[i].rgb, [colors[j][0], colors[j][1], colors[j][2]]) <= 10){
-						colors[j][3].push(entities[i])
-						colorMatched = true
-						break
-						print("color matched")
-					}else{}
-				}
-				if(!colorMatched){
-					colors.push([entities[i].r, entities[i].g, entities[i].b, [entities[i]]])
-				}
-			break
-			}
-		}
-		
-		//Find which colors have the most circles
-		temp = []
-		topColors = [[255, 255, 255, []], [255, 255, 255, []], [255, 255, 255, []]]
-		for(var i = 0; i < colors.length; i++){
-			if(colors[i][3].length > topColors[2][3].length){
-				topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
-
-				if(colors[i][3].length > topColors[1][3].length){
-					temp = topColors[1]
-					topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
-					topColors[2] = temp
-
-					if(colors[i][3].length > topColors[0][3].length){
-						temp = topColors[0]
-						topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
-						topColors[1] = temp
-					}
-				}
-			}
-		}
-		//push() at start of draw so the text stays in view
-		pop()
-		//push() to keep the menu button in the top right corner
-		tempTrans = [trans[0], trans[1]]
-		strokeWeight(2)
-		stroke(0)
-		textSize(20)
-		scale(1)
-		trans = [0, 0]
-		//Displaying all previous parents of currently highlighted mob
-		if(displayTree && typeof(highlightedMob) != "undefined"){
-			displayMobs(highlightedMob.tree)
-		}
-		if(showEntities){
-			displayMobs(entities)
-		}
-		if(showColors){
-			if(colorIndex != colors.length && colors.length > 0){
-				displayMobs(colors[colorIndex%colors.length][3])
-			}
-		}
-		//Drawing the menu
-		menu.display()
-		stats.display()
-		textAlign(CENTER)
-		//Drawing the top colors and how many of each top color there is
-		for(var i = 0; i < topColors.length; i++){
-			fill(topColors[i][0], topColors[i][1], topColors[i][2])
-			ellipse(200 + 50 * i, 50, 15)
-			text(topColors[i][3].length, 200 + 50 * i, 38)
-		}
-		noStroke()
-		fill(0)
-		textAlign(LEFT)
-		text(colors.length + " Unique Colors", 190, 78)
-		
-
-		trans = [tempTrans[0], tempTrans[1]]
-		//Population
-		
-		text("Time: " + getTime(frameCount), 20, 45)
-		
-		text("Population: " + entities.length, 20, 65)
-		//Instructions
-		textAlign(CENTER)
-		text("Hold mouse button for rapid click", windowWidth / 2, 20)
-		//Growth Rate
-		fill(35, 224, 67)
-		strokeWeight(1.5)
-		textSize(30)
-		textAlign(RIGHT)
-		//Only have the Growth Rate displayed for a few seconds
-		if (growthTimer > 0){
-			growthTimer--
-			text ("Growth Rate: " + growthRate.toFixed(1), windowWidth - 60, 100)
-		}
-		textAlign(RIGHT)
-		fill(255)
-		push()
-		fill(0)
-		textAlign(CENTER)
-		//Display the current framerate
-		text(str(round(frameRate())), windowWidth - 30, 25)
-		textSize(15)
-/* Debugging */
-		//Display the x and y position of the mouse in the area
-		//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
-		//Display the x and y position of the mouse in the screen
-		//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+		line(i, 0, i, aHeight)
 		pop()
 	}
+	for(var i = 0; i <= aHeight; i += sectorSize){
+		line(0, i, aWidth, i)
+	}
+	pop()*/
+	strokeWeight(20)
+	stroke(255, 150, 0)
+	//line((aWidth/2), 0, (aWidth/2), aHeight)
+
+	//Detect if the mouse is being held down to make a mob every 3 frames
+	if (mouseIsPressed){
+		pressed++
+		if(pressed % 2 == 0 && pressed > 10){
+			switch (clickRadio.value()){
+				case "Place":
+					if(placeRadio.value() == 'Mob'){
+						if(colorRadio.value() == 'Random'){
+							entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
+						}else{
+							placeColor = split(colorInput.value(), ',')
+							entities.push(new Mob(int(placeColor[0]), int(placeColor[1]), int(placeColor[2]), mouseXScale, MouseYScale, random(sizeRange[0], sizeRange[1]), 10))
+						}
+					}else{
+						foods.push(new Food(mouseXScale, MouseYScale))
+					}
+					break
+				case "Delete":
+					for(var i = 0; i < entities.length; i++){
+						if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) < entities[i].size/2){
+							print("Clicked on ", entities[i])
+							//Remove the mob from sectors
+							sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
+							//Remove the mob from entities
+							entities.splice(i,1)
+							i--;
+						}
+					}
+					break
+				case "Select":
+					for(var i = entities.length - 1; i >= 0; i--){
+						if(dist(mouseXScale, MouseYScale, entities[i].x, entities[i].y) <= entities[i].size/2){
+							//Check if the clicked on mob is already highlighted
+							if(entities[i].highlighted == false){
+								//If it isnt already highlighted, highlight it
+								entities[i].highlighted = true
+								if(typeof(highlightedMob) != "undefined"){
+									highlightedMob.highlighted = false
+									highlightedMob = entities[i]
+								}else{
+									highlightedMob = entities[i]
+								}
+								print("Clicked on", highlightedMob)
+								break
+							//If the mob is already highlighted, unhighlight it
+							}else{
+								entities[i].highlighted = false
+								highlightedMob = undefined
+							}
+						}
+					}
+					break		
+			}
+		}
+	}else{
+		pressed = 0
+	}
+	//(foodRate) foods are spawned each frame
+	if (foodRate > 0 && foods.length < 2500 && !paused){
+		randX = random(0, aWidth)
+		/*while (!(randX < aWidth/2 - 5000) && !(randX > aWidth/2 + 5000)) {
+			randX = random(0, aWidth);
+		}*/
+		//Im not exactly sure how this works but it does so im not going to change it.
+		if(((frameCounter*foodRate)%1).toFixed(4) < foodRate){
+		foods.push(new Food(randX, random(30, aHeight)))
+		}
+		//When foodRate is greater than 1 need to spawn atleast 1 food every frame
+		if(foodRate >= 1){
+			for(var i = 0; i < int(foodRate); i++){
+				foods.push(new Food(randX, random(30, aHeight)))
+			}
+		}
+	}else{
+	//Don't spawn food if food rate is 0 or negative
+	}
+	//Display food
+	for(var i = 0; i < foods.length; i++){
+		foods[i].update()
+	}
+	//Clear out the colors array to refill them with new values
+	colors = []
+	for(var i = 0; i < entities.length; i++){
+		//Allows for early exit if the mob has less than 0 lifespan
+		while(true){
+			//Remove dead entities
+			if(entities[i].lifeSpan <= 0){
+				//Unhighlight the mob if it is selected
+				if(highlightedMob == entities[i]){
+					print("Highlighted mob died")
+					highlightedMob = undefined
+				}
+				//Remove the mob from sectors
+				sectors[entities[i].sector[0]][entities[i].sector[1]].splice(find(sectors[entities[i].sector[0]][entities[i].sector[1]], entities[i]), 1)
+				//Remove the mob from entities
+				entities.splice(i, 1)
+				if(i != 0){
+					i--
+				}else{}
+				break
+			}
+			//Move, Display, split, increase breedNeed
+			entities[i].update()
+			
+			if(typeof(entities.target) != "undefined"){
+				if(entities[i].target.mob == false){
+					entities[i].findTarget()
+				}
+			}else{
+				entities[i].findTarget()
+			}
+			
+			//Have the camera follow highlighted mob
+			if(typeof(highlightedMob) != "undefined"){
+				if((windowWidth/2 * 1/scaleNum) - trans[0] != highlightedMob.x){
+					trans[0] = (windowWidth/2 * 1/scaleNum) - highlightedMob.x
+				}
+				if((windowHeight/2 * 1/scaleNum) - trans[1] != highlightedMob.y){
+					trans[1] = (windowHeight/2 * 1/scaleNum) - highlightedMob.y
+				}
+			}
+			
+			for(var j = 0; j < foods.length; j++){
+			//Check if the mob exists and if it is within range of food
+				if(typeof(foods[j]) != "undefined"){
+					if(entities[i].eats(foods[j])){
+						//If it does lengthen the mob's life
+						entities[i].lifeSpan += foods[j].value
+						pos = findInSectors(foods[j])
+						//And remove the food from foods and sectors
+						if(pos == -1 || typeof(sectors[foods[j].sector[0]][foods[j].sector[1]][pos[2]]) == "undefined"){
+							foods.splice(j, 1)
+						}else{
+							//sectors[pos[0]][pos[1]].splice(pos[2], 1)
+							sectors[foods[j].sector[0]][foods[j].sector[1]].splice(pos[2], 1)
+							foods.splice(j, 1)
+							if(j != 0){
+								j--
+							}
+						}
+					}
+				}
+			}
+			
+			//Checking if the entities color is already in the list
+			//If it is add to the count
+			//If it is not add the color to the list
+			colorMatched = false
+			for(var j = 0; j < colors.length; j++){
+				if(compareRgb(entities[i].rgb, [colors[j][0], colors[j][1], colors[j][2]]) <= 10){
+					colors[j][3].push(entities[i])
+					colorMatched = true
+					break
+					print("color matched")
+				}else{}
+			}
+			if(!colorMatched){
+				colors.push([entities[i].r, entities[i].g, entities[i].b, [entities[i]]])
+			}
+		break
+		}
+	}
+	
+	//Find which colors have the most circles
+	temp = []
+	topColors = [[255, 255, 255, []], [255, 255, 255, []], [255, 255, 255, []]]
+	for(var i = 0; i < colors.length; i++){
+		if(colors[i][3].length > topColors[2][3].length){
+			topColors[2] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+				if(colors[i][3].length > topColors[1][3].length){
+				temp = topColors[1]
+				topColors[1] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+				topColors[2] = temp
+					if(colors[i][3].length > topColors[0][3].length){
+					temp = topColors[0]
+					topColors[0] = [colors[i][0], colors[i][1], colors[i][2], colors[i][3]]
+					topColors[1] = temp
+				}
+			}
+		}
+	}
+	//push() at start of draw so the text stays in view
+	pop()
+	tempTrans = [trans[0], trans[1]]
+	strokeWeight(2)
+	stroke(0)
+	textSize(20)
+	scale(1)
+	trans = [0, 0]
+	//Displaying all previous parents of currently highlighted mob
+	if(displayTree && typeof(highlightedMob) != "undefined"){
+		displayMobs(highlightedMob.tree)
+	}
+	if(showEntities){
+		displayMobs(entities)
+	}
+	if(showColors){
+		if(colorIndex != colors.length && colors.length > 0){
+			displayMobs(colors[colorIndex%colors.length][3])
+		}
+	}
+	//Drawing the menu
+	menu.display()
+	stats.display()
+	textAlign(CENTER)
+	//Drawing the top colors and how many of each top color there is
+	for(var i = 0; i < topColors.length; i++){
+		fill(topColors[i][0], topColors[i][1], topColors[i][2])
+		ellipse(200 + 50 * i, 50, 15)
+		text(topColors[i][3].length, 200 + 50 * i, 38)
+	}
+	noStroke()
+	fill(0)
+	textAlign(LEFT)
+	text(colors.length + " Unique Colors", 190, 78)
+	
+
+	trans = [tempTrans[0], tempTrans[1]]
+	//Population
+	
+	text("Time: " + getTime(frameCounter), 20, 45)
+	
+	text("Population: " + entities.length, 20, 65)
+	//Instructions
+	textAlign(CENTER)
+	text("Hold mouse button for rapid click", windowWidth / 2, 20)
+	//Growth Rate
+	fill(35, 224, 67)
+	strokeWeight(1.5)
+	textSize(30)
+	textAlign(RIGHT)
+	//Only have the Growth Rate displayed for a few seconds
+	if (growthTimer > 0){
+		growthTimer--
+		text ("Growth Rate: " + growthRate.toFixed(1), windowWidth - 60, 100)
+	}
+	textAlign(RIGHT)
+	fill(255)
+	push()
+	fill(0)
+	textAlign(CENTER)
+	//Display the current framerate
+	text(str(round(frameRate())), windowWidth - 30, 25)
+	textSize(15)
+/* Debugging */
+	//Display the x and y position of the mouse in the area
+	text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
+	//Display the x and y position of the mouse in the screen
+	text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+    pop()
+    if (!paused) {
+        frameCounter++
+    } else {
+        push()
+        stroke(0)
+        strokeWeight(2)
+        fill('RED')
+        textAlign(CENTER)
+        text("PAUSED", windowWidth/2, windowHeight/2 - 30)
+        pop()
+    }
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -629,7 +637,7 @@ function mutate(gene, range){
 		gene += (random() - .5)*max/2.5
 	}else{
 		gene = random(min, max)
-		//print("Random Gene " + getTime(frameCount))
+		//print("Random Gene " + getTime(frameCounter))
 	}
 	if(gene > max){
 	   gene = max
@@ -737,7 +745,7 @@ function displayAvgStats(){
 	if(debug){
 		print("displayAvgStats took " + (millis() - start) + "ms")
 	}
-	/*print*/return("\nTime: " + getTime(frameCount) + 
+	/*print*/return("\nTime: " + getTime(frameCounter) + 
 					"\nPopulation: " + entities.length + 
 					"\nAverage Lifespan: " + avgLifespan + 
 					"\nAverage Max Size: " + avgMaxSize + 
@@ -798,22 +806,22 @@ function calcAvgStats(){
 	}
 	
 	//Record data points for later graphing
-	avgLifespanArr.push(avgLifespan, frameCount)
-	avgAgeArr.push(avgAge, frameCount)
+	avgLifespanArr.push(avgLifespan, frameCounter)
+	avgAgeArr.push(avgAge, frameCounter)
 	
-	avgMaxSizeArr.push(avgMaxSize, frameCount)
-	avgMinSizeArr.push(avgMinSize, frameCount)
-	avgMaxSpeedArr.push(avgMaxSpeed, frameCount)
-	avgSpeedGeneArr.push(avgSpeedGene, frameCount)
+	avgMaxSizeArr.push(avgMaxSize, frameCounter)
+	avgMinSizeArr.push(avgMinSize, frameCounter)
+	avgMaxSpeedArr.push(avgMaxSpeed, frameCounter)
+	avgSpeedGeneArr.push(avgSpeedGene, frameCounter)
 	
-	avgFeedNeedArr.push(avgFeedNeed, frameCount)
-	avgMatingThresholdArr.push(avgMatingThreshold, frameCount)
-	avgChildLifespanArr.push(avgChildLifespan, frameCount)
-	avgChildrenArr.push(avgChildren, frameCount)
-	avgLitterArr.push(avgLitter, frameCount)
-	avgGenerationArr.push(avgGeneration, frameCount)
-	minGenerationArr.push(minGeneration, frameCount)
-	maxGenerationArr.push(maxGeneration, frameCount)
+	avgFeedNeedArr.push(avgFeedNeed, frameCounter)
+	avgMatingThresholdArr.push(avgMatingThreshold, frameCounter)
+	avgChildLifespanArr.push(avgChildLifespan, frameCounter)
+	avgChildrenArr.push(avgChildren, frameCounter)
+	avgLitterArr.push(avgLitter, frameCounter)
+	avgGenerationArr.push(avgGeneration, frameCounter)
+	minGenerationArr.push(minGeneration, frameCounter)
+	maxGenerationArr.push(maxGeneration, frameCounter)
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -862,12 +870,12 @@ function cleanSectors(){
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
-function getTime(framecount){
+function getTime(frameCounter){
 	debug = false
 	if(debug){
 		start = millis()
 	}
-	time = (framecount) / fr
+	time = (frameCounter) / fr
 	hours = floor(time/60/60)
 	minutes = floor(time/60 - hours*60)
 	seconds = floor(time - minutes*60 - hours*60*60)
@@ -1008,11 +1016,7 @@ function mousePressed() {
 function keyPressed() {
 	//keyCode 32 is spacebar
 	if (keyCode == 32){
-		if(paused){
-			paused = false
-		}else{
-			//paused = true
-		}
+		paused = !paused
 	}
 	//keyCode 85 is u
 	if (keyCode == 85){
@@ -1037,12 +1041,19 @@ function keyPressed() {
 
 function mouseWheel(event) {
 	oldZoom = zoom
+	oldTrans = [trans[0], trans[1]]
+	//mousewheel up
+	//zoom in
 	if(event.delta < 0){
-		zoom = zoom + .05
+		zoom += .05
+	//mouswheel down
+	//zoom out
 	}else{
-		zoom = zoom - .05
+		zoom -= .05
 	}
-	
+	scaleChange = Math.pow(10, -oldZoom) - Math.pow(10, -zoom)
+	trans[0] -= (windowWidth/2)*(scaleChange)
+	trans[1] -= (windowHeight/2)*(scaleChange)
 	//https://stackoverflow.com/questions/2916081/zoom-in-on-a-point-using-scale-and-translate
 
 }
@@ -1058,7 +1069,7 @@ function average(value1, value2){
 
 //the following functions are based off of the pseudocode
 //found on www.easyrgb.com
-//I took this code from https://github.com/antimatter15/rgb-lab/blob/master/color.js
+//I found this code at https://github.com/antimatter15/rgb-lab/blob/master/color.js
 
 function rgb2lab(rgb){
 	debug = false
