@@ -39,6 +39,12 @@ var MouseYScale = 0
 
 //Whether or not the family tree of the highlighted mob should be displayed
 var displayTree = false
+//List of all the variable that can be graphed
+var graphs = []
+//List of all the names of the graphs
+var graphTitles
+//Index for which graph to display
+var graphIndex = 0
 //The currently selected mob
 var highlightedMob
 //Number of mobs created total
@@ -89,11 +95,10 @@ function setup() {
 			}
 		}
 	
-	for(var i = 0; i < 100; i++){		
-		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10))
-		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "square"))
-		//entities.push(new Mob(0, 0, 0, 0, 0, 70, 10, foods, "triangle"))
-		entities.push(new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(sizeRange[0], sizeRange[1]), /*life*/random(8, 14)))
+	for(var i = 0; i < 100; i++){
+		startMob = new Mob(random(0, 255), random(0, 255), random(0, 255), 0, 0, /*size*/random(sizeRange[0], sizeRange[1]), /*life*/random(8, 14))
+		//startMob.size = startMob.maxSize
+		entities.push(startMob)
 	}
 	
 	for(var i = 0; i < 500; i++){
@@ -102,10 +107,17 @@ function setup() {
 	
 	ungroup()
 	menu = new Menu(15, 80)
+	
+	
+	//List of all the variable that can be graphed
+	graphs = [avgLifespanArr, avgAgeArr, avgMaxSizeArr, avgMinSizeArr, avgMaxSpeedArr, avgSpeedGeneArr, avgFeedNeedArr, avgMatingThresholdArr, avgChildLifespanArr, avgChildrenArr, avgLitterArr, avgGenerationArr, minGenerationArr, maxGenerationArr]
+	//List of all the titles of the graphs
+	graphTitles = ["Health", "Age", "Max Size", "Min Size", "Max Speed", "Speed Gene", "Feed Need", "Mating Threshold", "Child Health", "Num of Children", "Litter Size", "Generation", "Min Generation", "Max Generation"]
+	
+	graph = new Graph(50, windowHeight - 10, graphs[graphIndex], graphTitles[graphIndex])
 	var highlightedMob = undefined
 	
 	stats = new Stats(windowWidth - 260, 80, 240)
-	print(displayAvgStats())
 	
 	//Put the camera near the center of the spawning area
 	//trans = [-aWidth/2, -aHeight/2]
@@ -122,8 +134,9 @@ function setup() {
 }
 
 function draw() {
-	//Every 10 minutes display average stats
-	if(frameCounter%(10*60*fr) == 0){
+	//Display average stats every so often
+	//if(frameCounter%(10*60*fr) == 0){
+	if(frameCounter%(60*fr) == 0 && frameCount > 10){
 		print(displayAvgStats())
 		cleanSectors()
 	}
@@ -396,6 +409,11 @@ function draw() {
 			displayMobs(colors[colorIndex%colors.length][3])
 		}
 	}
+	//Drawing graph
+	//if(graph){		
+		graph.update()
+	//}
+	
 	//Drawing the menu
 	menu.display()
 	stats.display()
@@ -441,9 +459,9 @@ function draw() {
 	textSize(15)
 /* Debugging */
 	//Display the x and y position of the mouse in the area
-	text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
+	//text(str(round(mouseXScale)) + ", " + str(round(MouseYScale)), mouseX, mouseY - 20)
 	//Display the x and y position of the mouse in the screen
-	text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
+	//text(round(mouseX) + ", " + round(mouseY), mouseX, mouseY - 5)
     pop()
     if (!paused) {
         frameCounter++
@@ -806,22 +824,22 @@ function calcAvgStats(){
 	}
 	
 	//Record data points for later graphing
-	avgLifespanArr.push(avgLifespan, frameCounter)
-	avgAgeArr.push(avgAge, frameCounter)
+	avgLifespanArr.push([avgLifespan, frameCounter])
+	avgAgeArr.push([avgAge/fr, frameCounter])
 	
-	avgMaxSizeArr.push(avgMaxSize, frameCounter)
-	avgMinSizeArr.push(avgMinSize, frameCounter)
-	avgMaxSpeedArr.push(avgMaxSpeed, frameCounter)
-	avgSpeedGeneArr.push(avgSpeedGene, frameCounter)
+	avgMaxSizeArr.push([avgMaxSize, frameCounter])
+	avgMinSizeArr.push([avgMinSize, frameCounter])
+	avgMaxSpeedArr.push([avgMaxSpeed, frameCounter])
+	avgSpeedGeneArr.push([avgSpeedGene, frameCounter])
 	
-	avgFeedNeedArr.push(avgFeedNeed, frameCounter)
-	avgMatingThresholdArr.push(avgMatingThreshold, frameCounter)
-	avgChildLifespanArr.push(avgChildLifespan, frameCounter)
-	avgChildrenArr.push(avgChildren, frameCounter)
-	avgLitterArr.push(avgLitter, frameCounter)
-	avgGenerationArr.push(avgGeneration, frameCounter)
-	minGenerationArr.push(minGeneration, frameCounter)
-	maxGenerationArr.push(maxGeneration, frameCounter)
+	avgFeedNeedArr.push([avgFeedNeed/fr, frameCounter])
+	avgMatingThresholdArr.push([avgMatingThreshold, frameCounter])
+	avgChildLifespanArr.push([avgChildLifespan*100, frameCounter])
+	avgChildrenArr.push([avgChildren, frameCounter])
+	avgLitterArr.push([avgLitter, frameCounter])
+	avgGenerationArr.push([avgGeneration, frameCounter])
+	minGenerationArr.push([minGeneration, frameCounter])
+	maxGenerationArr.push([maxGeneration, frameCounter])
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
@@ -902,6 +920,7 @@ function menuPressed(){
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight)
 	stats.x = windowWidth - 260
+	graph.y = windowHeight - 10
 	nextMobButton.position(windowWidth/2 + 5, windowHeight - 50)
 	prevMobButton.position(windowWidth/2 - 130, windowHeight - 50)
 }
@@ -1014,6 +1033,17 @@ function mousePressed() {
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 
 function keyPressed() {
+	//keycode 71 is g
+	if (keyCode == 71){
+		graphIndex++
+		if(graphIndex >= graphs.length){
+			graphIndex = 0
+		}
+		graph.min = 9999
+		graph.max = 0
+		graph.arr = graphs[graphIndex]
+		graph.title = graphTitles[graphIndex]
+	}
 	//keyCode 32 is spacebar
 	if (keyCode == 32){
 		paused = !paused

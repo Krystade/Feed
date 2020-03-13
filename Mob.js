@@ -169,7 +169,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			stroke(250, 50, 50)
 			strokeWeight(20)
 			noFill()
-			ellipse(this.x, this.y, this.size + 20)
+			ellipse(this.x, this.y, this.size + 18)
 		}
 		stroke(0)
 		strokeWeight(1)
@@ -181,8 +181,25 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}else if (this.shape == "triangle"){
 			triangle(this.x, this.y, this.x + this.size * .5, this.y - this.size, this.x + this.size, this.y)
 		}else {
-			ellipse(this.x, this.y, this.size, this.size)
+			ellipse(this.x, this.y, this.size)
 		}
+		//Draw the mobs face
+		push(0)
+		fill(0)
+		//Drawing the eyes
+		ellipse(this.x - this.size/8, this.y - this.size/16, this.size/50)
+		ellipse(this.x + this.size/8, this.y - this.size/16, this.size/50)
+		noFill()
+		strokeWeight(2)
+		//Drawing the mouth
+		if(this.lifeSpan > 20){
+			//Smile if healthy
+			arc(this.x, this.y, this.size/10, this.size/8, 0, PI)
+		}else{
+			//Frown if not healthy
+			arc(this.x, this.y, this.size/10, this.size/8, PI, 0)
+		}
+		pop()
 		
 		//Label how long the mob has to live in seconds
 		stroke(0)
@@ -374,6 +391,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		
 		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan)
 		
+		child.maxSize = mutate(rand[round(random(0,1))].maxSize, [child.minSize, child.maxSize + (child.maxSize*.2)])
 		child.childLife = mutate(rand[round(random(0,1))].childLife, [.0001, .99])
 		child.matingLifespanThreshold = mutate(rand[round(random(0,1))].matingLifespanThreshold, [10, 80])
 		child.feedNeed = mutate(rand[round(random(0,1))].feedNeed, [100, 4000 + this.feedNeed*.2])

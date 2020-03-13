@@ -104,8 +104,8 @@ function Stats(x, y, w){
                     //Text settings
                     noStroke()
 					fill(0)
-                    text("Feed Need: " + round(entities[mobIndex].feedNeed), this.x + 5, this.y + 30 + offset * 1)
-                    text("Breed Need: " + round(entities[mobIndex].breedNeed), this.x + 5, this.y + 30 + offset * 2)
+                    text("Feed Need: " + round(entities[mobIndex].feedNeed/fr), this.x + 5, this.y + 30 + offset * 1)
+                    text("Breed Need: " + round(entities[mobIndex].breedNeed/fr), this.x + 5, this.y + 30 + offset * 2)
                     text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + 30 + offset * 3)
                     text("Number of Children: " + entities[mobIndex].numChildren, this.x + 5, this.y + 30 + offset * 4)
                     text("Max Litter: " + nf(entities[mobIndex].litterSize, 0, 2), this.x + 5, this.y + 30 + offset * 5)
