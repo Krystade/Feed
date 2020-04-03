@@ -51,7 +51,7 @@ var highlightedMob
 var currentId = 0000
 
 //Arrays of past average data
-var avgLifespanArr = []
+var avgHealthArr = []
 var avgAgeArr = []
 	
 var avgMaxSizeArr = []
@@ -61,7 +61,7 @@ var avgSpeedGeneArr = []
 	
 var avgFeedNeedArr = []
 var avgMatingThresholdArr = []
-var avgChildLifespanArr = []
+var avgChildHealthArr = []
 var avgChildrenArr = []
 var avgLitterArr = []
 var avgGenerationArr = []
@@ -72,16 +72,21 @@ var maxGenerationArr = []
 var showEntities = false
 var showColors = false
 var colorIndex = 0
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
 function setup() {
 	createCanvas(windowWidth, windowHeight)
 	frameRate(fr)
+	//test = createFileInput()
+	//test.position(100, 100)
 	//Setting the area that food is allowed to spawn in
 	aWidth = sectorSize * 35
 	aHeight = sectorSize * 35
 	//Color of the background
 	bground = color(210, 220, 235)
 	//The range of sizes that mobs are spawned in
-	sizeRange = [10, 160]
+	sizeRange = [10, 70]
 	//Variable to control how frequent mutations are. Value between 0 and 1, 1 being 100% rate to mutate
 	mutationRate = .7
 	
@@ -110,7 +115,7 @@ function setup() {
 	
 	
 	//List of all the variable that can be graphed
-	graphs = [avgLifespanArr, avgAgeArr, avgMaxSizeArr, avgMinSizeArr, avgMaxSpeedArr, avgSpeedGeneArr, avgFeedNeedArr, avgMatingThresholdArr, avgChildLifespanArr, avgChildrenArr, avgLitterArr, avgGenerationArr, minGenerationArr, maxGenerationArr]
+	graphs = [avgHealthArr, avgAgeArr, avgMaxSizeArr, avgMinSizeArr, avgMaxSpeedArr, avgSpeedGeneArr, avgFeedNeedArr, avgMatingThresholdArr, avgChildHealthArr, avgChildrenArr, avgLitterArr, avgGenerationArr, minGenerationArr, maxGenerationArr]
 	//List of all the titles of the graphs
 	graphTitles = ["Health", "Age", "Max Size", "Min Size", "Max Speed", "Speed Gene", "Feed Need", "Mating Threshold", "Child Health", "Num of Children", "Litter Size", "Generation", "Min Generation", "Max Generation"]
 	
@@ -133,10 +138,12 @@ function setup() {
 	nextMobButton.mousePressed(highlightNext)
 }
 
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
 function draw() {
 	//Display average stats every so often
 	//if(frameCounter%(10*60*fr) == 0){
-	if(frameCounter%(60*fr) == 0 && frameCount > 10){
+	if(frameCounter%(10 * 60 * fr) == 0 && frameCounter > 10){
 		print(displayAvgStats())
 		cleanSectors()
 	}
@@ -291,10 +298,10 @@ function draw() {
 	//Clear out the colors array to refill them with new values
 	colors = []
 	for(var i = 0; i < entities.length; i++){
-		//Allows for early exit if the mob has less than 0 lifespan
+		//Allows for early exit if the mob has less than 0 health
 		while(true){
 			//Remove dead entities
-			if(entities[i].lifeSpan <= 0){
+			if(entities[i].health <= 0){
 				//Unhighlight the mob if it is selected
 				if(highlightedMob == entities[i]){
 					print("Highlighted mob died")
@@ -335,7 +342,7 @@ function draw() {
 				if(typeof(foods[j]) != "undefined"){
 					if(entities[i].eats(foods[j])){
 						//If it does lengthen the mob's life
-						entities[i].lifeSpan += foods[j].value
+						entities[i].health += foods[j].value
 						pos = findInSectors(foods[j])
 						//And remove the food from foods and sectors
 						if(pos == -1 || typeof(sectors[foods[j].sector[0]][foods[j].sector[1]][pos[2]]) == "undefined"){
@@ -765,13 +772,13 @@ function displayAvgStats(){
 	}
 	/*print*/return("\nTime: " + getTime(frameCounter) + 
 					"\nPopulation: " + entities.length + 
-					"\nAverage Lifespan: " + avgLifespan + 
+					"\nAverage Health: " + avgHealth + 
 					"\nAverage Max Size: " + avgMaxSize + 
 					"\nAverage Min Size: " + avgMinSize + 
 					"\nAverage Max Speed: " + avgMaxSpeed + 
 					"\nAverage Speed Gene: " + avgSpeedGene + 
 					"\nAverage Feed Need: " + avgFeedNeed + 
-					"\nAverage Child Lifespan: " + avgChildLifespan*100 + "%" + 
+					"\nAverage Child Health: " + avgChildHealth*100 + "%" + 
 					"\nAverage # of Children: " + avgChildren + 
 					"\nAverage Max Litter Size: " + avgLitter + 
 					"\nMin Generation: " + minGeneration + 
@@ -784,7 +791,7 @@ function displayAvgStats(){
 
 function calcAvgStats(){
 	//Default values
-	avgLifespan = 0
+	avgHealth = 0
 	avgAge = 0
 	
 	avgMaxSize = 0
@@ -794,7 +801,7 @@ function calcAvgStats(){
 	
 	avgFeedNeed = 0
 	avgMatingThreshold = 0
-	avgChildLifespan = 0
+	avgChildHealth = 0
 	avgChildren = 0
 	avgLitter = 0
 	avgGeneration = 0
@@ -802,7 +809,7 @@ function calcAvgStats(){
 	maxGeneration = -1
 	
 	for(var i = 0; i < entities.length; i++){
-		avgLifespan += entities[i].lifeSpan/entities.length
+		avgHealth += entities[i].health/entities.length
 		avgAge += entities[i].age/entities.length
 		
 		avgMaxSize += entities[i].maxSize/entities.length
@@ -811,8 +818,8 @@ function calcAvgStats(){
 		avgSpeedGene += entities[i].speedGene/entities.length
 		
 		avgFeedNeed += entities[i].feedNeed/entities.length
-		avgMatingThreshold += entities[i].matingLifespanThreshold/entities.length
-		avgChildLifespan += entities[i].childLife/entities.length
+		avgMatingThreshold += entities[i].matingHealthThreshold/entities.length
+		avgChildHealth += entities[i].childLife/entities.length
 		avgChildren += entities[i].numChildren/entities.length
 		avgLitter += entities[i].litterSize/entities.length
 		avgGeneration += entities[i].generation/entities.length
@@ -824,7 +831,7 @@ function calcAvgStats(){
 	}
 	
 	//Record data points for later graphing
-	avgLifespanArr.push([avgLifespan, frameCounter])
+	avgHealthArr.push([avgHealth, frameCounter])
 	avgAgeArr.push([avgAge/fr, frameCounter])
 	
 	avgMaxSizeArr.push([avgMaxSize, frameCounter])
@@ -834,12 +841,197 @@ function calcAvgStats(){
 	
 	avgFeedNeedArr.push([avgFeedNeed/fr, frameCounter])
 	avgMatingThresholdArr.push([avgMatingThreshold, frameCounter])
-	avgChildLifespanArr.push([avgChildLifespan*100, frameCounter])
+	avgChildHealthArr.push([avgChildHealth*100, frameCounter])
 	avgChildrenArr.push([avgChildren, frameCounter])
 	avgLitterArr.push([avgLitter, frameCounter])
 	avgGenerationArr.push([avgGeneration, frameCounter])
 	minGenerationArr.push([minGeneration, frameCounter])
 	maxGenerationArr.push([maxGeneration, frameCounter])
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function saveSim(){
+	//MOVE SPLIT to before setup
+	//Split points for each saved variable
+	let split = ["frameCounter", "currentId", "foodRate", "zoom", "trans", "Entities", "Foods"]
+	let saveFile = []
+	
+	saveFile.push(frameCounter)
+	saveFile.push("frameCounter")
+	saveFile.push("\n")
+	
+	saveFile.push(currentId)
+	saveFile.push("currentId")
+	saveFile.push("\n")
+	
+	
+	saveFile.push(foodRate)
+	saveFile.push("foodRate")
+	saveFile.push("\n")
+	
+	
+	saveFile.push(zoom)
+	saveFile.push("zoom")
+	saveFile.push("\n")
+	
+	
+	saveFile.push(trans)
+	saveFile.push("trans")
+	saveFile.push("\n")
+	
+	for(var i = 0; i < graphs.length; i++){
+		saveFile.push(getGraphData(graphs[i]))
+		saveFile.push(graphTitles[i] + "\n")
+	}
+	saveFile.push("Graphs")
+	saveFile.push("\n")
+	
+	
+	for(var i = 0; i < entities.length; i++){
+		entityString = getEntityData(entities[i])
+		saveFile.push(entityString)
+	}
+	saveFile.push("Entities")
+	saveFile.push("\n")
+	
+	saveFile.push(getFoodData())
+	saveFile.push("\n")
+	
+	
+	saveFile.push("Foods")
+	saveFile.push("\n")
+	
+	
+	saveStrings(saveFile, "Save", "txt")
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function loadSave(){
+	loadStrings("Save.txt", fileLoaded)
+}
+
+function fileLoaded(text){
+	//Empty current entities and foods
+	//Will be filled with loaded data
+	entities = []
+	foods = []
+	
+	frameCounter = int(text[0])
+	currentId = int(text[2])
+	foodRate = float(text[4])
+	foodRateInput.attribute('placeholder', foodRate)
+	zoom = float(text[6])
+	trans = int(split(text[8], ","))
+	
+	//Remove added values from text
+	text.splice(0, 10)
+	
+	//Filling the graphs
+	for(var i = 0; i < graphs.length; i++){
+		//text[i*2] is all of the data for each graph individually, skips the labeling
+		let values = split(text[i*2], "|")
+		for(var j = 0; j < values.length; j++){
+			graphs[i].push(float(split(values[j], ", ")))
+		}
+	}
+	
+	//Remove added graph data from text
+	for(var i = 0; i < text.length; i++){
+		if(text[i] == "Graphs"){
+			text.splice(0, i + 1)
+			break
+		}
+	}
+	
+	//Filling the mobs
+	//Adding 16 values per entitiy
+	while(text[0] != "Entities"){
+		loadRgb = int(split(text[0], ","))
+		entityLoad = new Mob(loadRgb[0], loadRgb[1], loadRgb[2], float(text[1]), float(text[2]), float(text[3]), float(text[4]))
+		entityLoad.maxSize = float(text[5])
+		entityLoad.speedGene = float(text[6])
+		entityLoad.created = float(text[7])
+		entityLoad.age = int(text[8])
+		entityLoad.id = int(text[9])
+		entityLoad.feedNeed = int(text[10])
+		entityLoad.matingHealthThreshold = float(text[11])
+		entityLoad.maxBreedNeed = int(text[12])
+		entityLoad.generation = int(text[13])
+		entityLoad.numChildren = int(text[14])
+		entityLoad.timesSplit = int(text[15])
+		entities.push(entityLoad)
+		
+		text.splice(0, 16)
+	}
+	//Removing the "Entities" Tag
+	text.splice(0, 1)
+	
+	//Filling foods
+	for(var i = 0; i < int(text[0]); i++){
+		foods.push(new Food(random(0, aWidth), random(0, aHeight)))
+	}
+	/*while(text[0] != "Foods"){
+		foodLoad = new Food(float(text[0]), float(text[1]))
+		foodLoad.color = text[2]
+		foodLoad.value = text[3]
+		foods.push(foodLoad)
+		splice(0, 4)			
+	}*/
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function getGraphData(graphIn){
+	//Convert all necessary data into string array format
+	let graphString = []
+	for(var i = 0; i < graphIn.length; i++){
+		graphString += (graphIn[i][0] + ", " + graphIn[i][1] + " | ")
+	}
+	return graphString
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function getEntityData(entity){
+	//Convert all necessary data into string array format
+	let entityString = ""
+	entityString += (entity.rgb + "\n")
+	entityString += (entity.x + "\n")
+	entityString += (entity.y + "\n")
+	entityString += (entity.size + "\n")
+	entityString += (entity.health + "\n")
+	entityString += (entity.maxSize + "\n")
+	entityString += (entity.speedGene + "\n")
+	entityString += (entity.created + "\n")
+	entityString += (entity.age + "\n")
+	entityString += (entity.id + "\n")
+	entityString += (entity.feedNeed + "\n")
+	entityString += (entity.matingHealthThreshold + "\n")
+	entityString += (entity.maxBreedNeed + "\n")
+	entityString += (entity.generation + "\n")
+	entityString += (entity.numChildren + "\n")
+	entityString += (entity.timesSplit + "\n")
+	return entityString
+}
+
+/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
+
+function getFoodData(){
+	//Convert all necessary data into string array format
+	/*let foodString = []
+	foodString.push(food.x)
+	foodString.push("\n")
+	foodString.push(food.y)
+	foodString.push("\n")
+	foodString.push(food.color)
+	foodString.push("\n")
+	foodString.push(food.value)
+	foodString.push("\n")
+	return foodString*/
+	//Re-placing all food into a random location so data for each one does not need to be loaded
+	return foods.length
 }
 
 /*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/

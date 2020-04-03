@@ -1,4 +1,4 @@
-function Mob (r, g, b, x, y, size, lifeSpan){
+function Mob (r, g, b, x, y, size, health){
 	this.mob = true
 	this.food = false
 	//Location and Speed
@@ -7,11 +7,11 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//Current size of the mob
 	this.size = size
 	//Max size the mob will be
-	this.maxSize = size * 4
+	this.maxSize = size * random(1.5, 5.5)
 	//Starting size, Minimum size the mob will be
 	this.minSize = size
-	this.xSpeed = .0001//random(-4, 3)
-	this.ySpeed = .0001//random(-4, 3)
+	this.xSpeed = .0001
+	this.ySpeed = .0001
 	this.speed = sqrt(this.xSpeed * this.xSpeed + this.ySpeed * this.ySpeed)
 	//How quickly a mob can accelerate in any given direction
 	//this.acc = random(1,10)
@@ -23,12 +23,15 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	
 	//Aging and Growth
 	this.frames = ceil(random(0, 10))
-	this.lifeSpan = lifeSpan
+	this.health = health
 	//Time when mob was created
-	this.created = getTime(frameCount)
+	this.created = getTime(frameCounter)
 	//How old the mob is in frames
 	this.age = 0
+	//How long the mob has been alive in hh:mm:ss
 	this.timeAlive = 0
+	//How long the mob will live before exploding (dying of old age)
+	this.lifespan = 30 * 60 * 10
 	//Id of mob created
 	this.id = currentId
 	currentId++
@@ -40,7 +43,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//Breeding
 	//Maximum number of offspring that can be had at once
 	this.litterSize = int(random(1,8))
-	//Percent of current lifespan given to offspring
+	//Percent of current health given to offspring
 	this.childLife = random(.05, .9)
 	//this.childLife = .2
 	//How long since the mob has bred
@@ -50,7 +53,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//If the mob is ready to breed
 	this.canBreed = false
 	//The minimum amount of life before searching for a mate
-	this.matingLifespanThreshold = random(10, 80)
+	this.matingHealthThreshold = random(10, 80)
 	//If the mob has enough life to search for a mate
 	this.canSearch = false
 	//How many generations in the mob is
@@ -64,6 +67,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	//Cooldown is 30 seconds
 	//this.breedCoolDown = fr * 30
 	
+	//How far the mob can see food
 	this.visionRange = 4
 	
 	this.highlighted = false
@@ -91,8 +95,8 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	
     this.update = function () {
         if (!paused) {
-            //lifeSpan decreases every 30 frames (1 sec)
-            this.lifeSpan -= 1 / fr
+            //health decreases every 30 frames (1 sec)
+            this.health -= 1 / fr
             this.frames++
             if (this.frames >= 15) {
                 this.frames = 0
@@ -100,7 +104,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
             //Mob ages every frame
             this.age++
             //If the mob is a the max age, kill it
-            if (this.age > 30 * 60 * 10) {
+            if (this.age > this.lifespan) {
                 this.die()
             }
             this.timeAlive = getTime(this.age)
@@ -192,7 +196,10 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		noFill()
 		strokeWeight(2)
 		//Drawing the mouth
-		if(this.lifeSpan > 20){
+		// O if about to explode (die from old age)
+		if(this.age > this.lifespan - fr * 5){
+			ellipse(this.x, this.y, this.size/18, this.size/15)
+		}else if(this.health > 20){
 			//Smile if healthy
 			arc(this.x, this.y, this.size/10, this.size/8, 0, PI)
 		}else{
@@ -207,16 +214,16 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		textAlign(CENTER)
 		textSize(this.size * .7)
 		if (this.shape == "circle"){
-			text(ceil(this.lifeSpan), this.x, this.y - this.size * .6)
+			text(ceil(this.health), this.x, this.y - this.size * .6)
 		}else if (this.shape == "square"){
-			text(ceil(this.lifeSpan), this.x + this.size / 2, this.y - this.size * .4)
+			text(ceil(this.health), this.x + this.size / 2, this.y - this.size * .4)
 		}else if (this.shape == "triangle"){
-			text(ceil(this.lifeSpan), this.x + this.size / 3, this.y - this.size * 1.3)
+			text(ceil(this.health), this.x + this.size / 3, this.y - this.size * 1.3)
 		}else {
-			text(ceil(this.lifeSpan), this.x, this.y - this.size * .6)
+			text(ceil(this.health), this.x, this.y - this.size * .6)
 		}
-		//Opacity directly correlates to lifeSpan, 0 is clear 255 is solid
-		this.color = color(this.r, this.g, this.b, this.lifeSpan * 5)
+		//Opacity directly correlates to health, 0 is clear 255 is solid
+		this.color = color(this.r, this.g, this.b, this.health * 5)
 		pop()
 	}
 	
@@ -284,14 +291,14 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			}
 		}
 		//Only stop the mob from searching if it drops below the threshold
-		if(this.lifeSpan < this.matingLifespanThreshold){
+		if(this.health < this.matingHealthThreshold){
 			this.canSearch = false
 		//Once it has a decent buffer to allow for travel time, then search for a mate
-		}else if(this.lifeSpan > this.matingLifespanThreshold + 15){
+		}else if(this.health > this.matingHealthThreshold + 15){
 			this.canSearch = true
 		}else{}
 		
-		if(this.breedNeed > this.feedNeed && (this.lifeSpan > 45 || this.canSearch)){
+		if(this.breedNeed > this.feedNeed && (this.health > 45 || this.canSearch)){
 			//Switch entities for mobList to limit breeding to those in vision range
 			if(this.findValidMates(mobList).length > 0){
 				this.target = this.findMate(this.findValidMates(mobList))
@@ -383,17 +390,17 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 		}
 		this.breedNeed -= this.feedNeed
 		this.canBreed = false
-		childLifespan = this.lifeSpan * this.childLife
-		this.lifeSpan *= 1 - this.childLife
+		childHealth = this.health * this.childLife
+		this.health *= 1 - this.childLife
 		
 		var rand = [this, other]
 		childSize = mutate(rand[round(random(0,1))].minSize, [40, 80 + .2*this.minSize])
 		
-		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childLifespan)
+		child = new Mob(mutate(average(this.r, other.r), [0, 255]), mutate(average(this.g, other.g), [0,255]), mutate(average(this.b, other.b), [0,255]), average(this.x, other.x), average(this.y, other.y), childSize, childHealth)
 		
 		child.maxSize = mutate(rand[round(random(0,1))].maxSize, [child.minSize, child.maxSize + (child.maxSize*.2)])
 		child.childLife = mutate(rand[round(random(0,1))].childLife, [.0001, .99])
-		child.matingLifespanThreshold = mutate(rand[round(random(0,1))].matingLifespanThreshold, [10, 80])
+		child.matingHealthThreshold = mutate(rand[round(random(0,1))].matingHealthThreshold, [10, 80])
 		child.feedNeed = mutate(rand[round(random(0,1))].feedNeed, [100, 4000 + this.feedNeed*.2])
 		child.litterSize = mutate(rand[round(random(0,1))].litterSize, [1.1, (8 + this.litterSize*.2)])
 		child.maxBreedNeed = child.feedNeed * child.litterSize
@@ -430,19 +437,19 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 	
 	this.split = function(){
 		this.timesSplit++
-		//If the mobs have enough lifespan they will split into two identical halves
-		//Lose a considerable amount of lifespan but guarantees a possible mate
-		if(this.lifeSpan >= 500){
-			this.lifeSpan *= .70
+		//If the mobs have enough health they will split into two identical halves
+		//Lose a considerable amount of health but guarantees a possible mate
+		if(this.health >= 500){
+			this.health *= .70
 			this.breedNeed = 0
-			copy = new Mob(this.r, this.g, this.b, this.x, this.y, this.size/2, this.lifeSpan/2)
+			copy = new Mob(this.r, this.g, this.b, this.x, this.y, this.size/2, this.health/2)
 			
 			copy.minSize = this.minSize
 			copy.maxSize = this.maxSize
 			copy.feedNeed = this.feedNeed
 			copy.litterSize = this.litterSize
 			copy.maxBreedNeed = this.maxBreedNeed
-			copy.matingLifespanThreshold = this.matingLifespanThreshold
+			copy.matingHealthThreshold = this.matingHealthThreshold
 			copy.childLife = this.childLife
 			copy.speedGene = this.speedGene
 			copy.generation = this.generation
@@ -452,25 +459,25 @@ function Mob (r, g, b, x, y, size, lifeSpan){
 			
 			entities.push(copy)
 			this.size /= 2
-			this.lifeSpan /= 2
+			this.health /= 2
 		}
 	}
 	/*=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=*/
 	
 	this.die = function(){
-		//Lose 40% of lifespan before turning into food
-		this.lifeSpan *= .60
-		while(this.lifeSpan > 0){
+		//Lose 40% of health before turning into food
+		this.health *= .60
+		while(this.health > 0){
 			var newFood = new Food(this.x + random(this.size * -2, this.size * 2), this.y + random(this.size * -2, this.size * 2))
 			//var newFood = new Food(this.x, this.y)
 			newFood.color = color(255,215,0)
-			if(this.lifeSpan > 10){
+			if(this.health > 10){
 				var randPercent = random(0, .2)
-				newFood.value = this.lifeSpan * randPercent
-				this.lifeSpan *= 1 - randPercent
+				newFood.value = this.health * randPercent
+				this.health *= 1 - randPercent
 			}else{
-				newFood.value = this.lifeSpan
-				this.lifeSpan = 0
+				newFood.value = this.health
+				this.health = 0
 				this.xSpeed = 0
 				this.ySpeed = 0
 			}

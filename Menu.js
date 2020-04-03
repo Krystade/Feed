@@ -266,7 +266,7 @@ function highlightHealthiest(){
 	if(entities.length > 0){
 		var healthiest = entities[0]
 		for(var i = 1; i < entities.length; i++){
-			if(entities[i].lifeSpan > healthiest.lifeSpan){
+			if(entities[i].health > healthiest.health){
 				healthiest = entities[i]
 			}
 		}

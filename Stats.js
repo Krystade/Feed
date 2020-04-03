@@ -46,7 +46,7 @@ function Stats(x, y, w){
 					fill(0)
                     text("Index: " + mobIndex, this.x + 5, this.y + 30 + offset * 1)
                     text("ID: " + entities[mobIndex].id, this.x + 5, this.y + 30 + offset * 2)
-                    text("Lifespan: " + ceil(entities[mobIndex].lifeSpan), this.x + 5, this.y + 30 + offset * 3)
+                    text("Health: " + ceil(entities[mobIndex].health), this.x + 5, this.y + 30 + offset * 3)
                     text("Color: RGB(" + entities[mobIndex].r + "," + entities[mobIndex].g + "," + entities[mobIndex].b + ")", this.x + 5, this.y + 30 + offset * 4)
                     text("Sector: [" + entities[mobIndex].sector + "]", this.x + 5, this.y + 30 + offset * 5)
                     text("Created: " + entities[mobIndex].created, this.x + 5, this.y + 30 + offset * 6)
@@ -109,8 +109,8 @@ function Stats(x, y, w){
                     text("Generation: " + entities[mobIndex].generation, this.x + 5, this.y + 30 + offset * 3)
                     text("Number of Children: " + entities[mobIndex].numChildren, this.x + 5, this.y + 30 + offset * 4)
                     text("Max Litter: " + nf(entities[mobIndex].litterSize, 0, 2), this.x + 5, this.y + 30 + offset * 5)
-                    text("Mating Threshold: " + nf(entities[mobIndex].matingLifespanThreshold, 0, 2), this.x + 5, this.y + 30 + offset * 6)
-                    text("Child Lifespan: " + nf(entities[mobIndex].childLife * 100, 0, 2) + "%", this.x + 5, this.y + 30 + offset * 7)
+                    text("Mating Threshold: " + nf(entities[mobIndex].matingHealthThreshold, 0, 2), this.x + 5, this.y + 30 + offset * 6)
+                    text("Child Health: " + nf(entities[mobIndex].childLife * 100, 0, 2) + "%", this.x + 5, this.y + 30 + offset * 7)
                     break
                 default:
                     this.tab = 0
