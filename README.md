@@ -33,3 +33,7 @@ This method loses 30% of the mob's orignal health however
 * S:        Toggle showing every living mob's color. (Currently selected mob will be highlighted.)
 * C:        Toggle showing every living mob of a similar color.
 * V:        Cycle to the next mob color group (shown if C has been pressed)
+
+### Example
+
+![example of the program](/example.png)
