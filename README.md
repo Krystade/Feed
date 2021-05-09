@@ -7,6 +7,9 @@ Circles that try to stay alive and reproduce for as long as possible.
 * Only mobs of a similar color are able to breed and they will only seek out valid mates.
 * Each mob has it's own set of 12 "genes" that control how big and fast it is along with how often it can mate and how many ofspring it can produce at once.
 
+# To Run
+Simply download all the files of this repository and open the index.html file in your web browser. (Chrome, Firefox, Edge)
+
 ## Offspring
 * A mob can produce offspring by either mating with a similar colored mob and expending some of it's health to give to the offspring 
 or by splitting and creating an identical copy to itself.
