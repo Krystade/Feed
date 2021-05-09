@@ -3,7 +3,8 @@ Circles that try to stay alive and reproduce for as long as possible.
 
 # Summary
 
-* The number above each circle (mob) represents it's current time left in seconds. If the timer hits 0, the mob will die.
+* The number above each circle (mob) represents it's current time left in seconds. If the timer hits 0 or the mob has been alive for more than 10 minutes, the mob will die.
+* If the mob dies from the hard limit of 10 minutes, 60% of it's life will be turned into food and spread over a small area. This food is gold instead of green.
 * Only mobs of a similar color are able to breed and they will only seek out valid mates.
 * Each mob has it's own set of 12 "genes" that control how big and fast it is along with how often it can mate and how many ofspring it can produce at once.
 
