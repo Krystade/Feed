@@ -77,7 +77,7 @@ function setup() {
 	//The range of sizes that mobs are spawned in
 	sizeRange = [10, 160]
 	//Variable to control how frequent mutations are. Value between 0 and 1, 1 being 100% rate to mutate
-	mutationRate = .7
+	mutationRate = .2
 	
 	//Fill sectors with empty arrays
 		//Number of sectors wide
@@ -122,8 +122,8 @@ function setup() {
 }
 
 function draw() {
-	//Every 10 minutes display average stats
-	if(frameCounter%(10*60*fr) == 0){
+	//Every minute display average stats
+	if(frameCounter%(1*60*fr) == 0){
 		print(displayAvgStats())
 		cleanSectors()
 	}
