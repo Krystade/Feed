@@ -27,9 +27,9 @@ This method loses 30% of the mob's orignal health however
 
 ### Available Hotkeys
 
-Spacebar: Pause/unpause the sim
-G:        Cycle to next available stat graph.
-U:        Ungroup all mobs, placing them equidistant from each other.
-S:        Toggle showing every living mob's color. (Currently selected mob will be highlighted.)
-C:        Toggle showing every living mob of a similar color.
-V:        Cycle to the next mob color group (shown if C has been pressed)
+* Spacebar: Pause/unpause the sim
+* G:        Cycle to next available stat graph.
+* U:        Ungroup all mobs, placing them equidistant from each other.
+* S:        Toggle showing every living mob's color. (Currently selected mob will be highlighted.)
+* C:        Toggle showing every living mob of a similar color.
+* V:        Cycle to the next mob color group (shown if C has been pressed)
