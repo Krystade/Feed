@@ -121,7 +121,7 @@ function Mob (r, g, b, x, y, size, lifeSpan){
             //Move the mob
             this.move()
 
-            //this.split()
+            this.split()
             if (this.maxBreedNeed > this.breedNeed) {
                 this.breedNeed++
             }
